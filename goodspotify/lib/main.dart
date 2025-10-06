@@ -22,19 +22,19 @@ class GoodSpotifyApp extends StatelessWidget {
       title: 'GoodSpotify',
       debugShowCheckedModeBanner: false,
       
-      // Configuration des thèmes
+      // Theme configuration
       theme: _buildLightTheme(),
       darkTheme: _buildDarkTheme(),
       themeMode: ThemeMode.system,
       
-      // Configuration GetX
+      // GetX configuration
       initialBinding: MainBinding(),
       
-      // Page d'accueil
+      // Home page
       home: const MainPage(),
       
-      // Configuration des locales
-      locale: const Locale('fr', 'FR'),
+      // Locale configuration
+      locale: const Locale('en', 'US'),
       fallbackLocale: const Locale('en', 'US'),
     );
   }
@@ -77,7 +77,7 @@ class GoodSpotifyApp extends StatelessWidget {
       appBarTheme: const AppBarTheme(
         centerTitle: true,
         elevation: 0,
-        backgroundColor: Color(0xFF191414), // Noir Spotify
+        backgroundColor: Color(0xFF191414), // Spotify black
         foregroundColor: Colors.white,
       ),
       cardTheme: CardThemeData(
@@ -93,7 +93,7 @@ class GoodSpotifyApp extends StatelessWidget {
         type: BottomNavigationBarType.fixed,
         backgroundColor: Color(0xFF191414),
       ),
-      scaffoldBackgroundColor: const Color(0xFF121212), // Fond sombre Spotify
+      scaffoldBackgroundColor: const Color(0xFF121212), // Spotify dark background
     );
   }
 }

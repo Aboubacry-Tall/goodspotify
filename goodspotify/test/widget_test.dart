@@ -21,9 +21,9 @@ void main() {
     expect(find.text('GoodSpotify'), findsOneWidget);
     
     // Verify bottom navigation exists
-    expect(find.text('Accueil'), findsOneWidget);
+    expect(find.text('Home'), findsOneWidget);
     expect(find.text('Top'), findsOneWidget);
     expect(find.text('Stats'), findsOneWidget);
-    expect(find.text('Paramètres'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
   });
 }

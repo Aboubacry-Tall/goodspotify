@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
 
 class StatsController extends GetxController {
-  // Variables observables pour la page Stats
+  // Observable variables for Stats page
   var isLoading = false.obs;
   var listeningTime = 0.obs;
   var totalTracks = 0.obs;
@@ -15,15 +15,15 @@ class StatsController extends GetxController {
     loadStatsData();
   }
 
-  // Charger les statistiques
+  // Load statistics
   Future<void> loadStatsData() async {
     try {
       isLoading.value = true;
       
-      // Simulation de chargement de données
+      // Data loading simulation
       await Future.delayed(const Duration(seconds: 2));
       
-      // Ici vous intégrerez l'API Spotify et Firebase
+      // Here you will integrate Spotify API and Firebase
       listeningTime.value = 12450; // minutes
       totalTracks.value = 1250;
       totalArtists.value = 150;
@@ -49,14 +49,14 @@ class StatsController extends GetxController {
     }
   }
 
-  // Calculer le temps d'écoute en format lisible
+  // Calculate listening time in readable format
   String get formattedListeningTime {
     int hours = listeningTime.value ~/ 60;
     int minutes = listeningTime.value % 60;
     return '${hours}h ${minutes}min';
   }
 
-  // Rafraîchir les données
+  // Refresh data
   Future<void> refreshData() async {
     await loadStatsData();
   }

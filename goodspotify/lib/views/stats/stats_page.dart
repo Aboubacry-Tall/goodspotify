@@ -11,7 +11,7 @@ class StatsPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Statistiques'),
+        title: const Text('Statistics'),
         backgroundColor: const Color(0xFF1DB954),
         foregroundColor: Colors.white,
         elevation: 0,
@@ -34,12 +34,12 @@ class StatsPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Statistiques générales
+                // General statistics
                 Row(
                   children: [
                     Expanded(
                       child: _buildStatCard(
-                        'Temps d\'écoute',
+                        'Listening Time',
                         controller.formattedListeningTime,
                         Icons.access_time,
                         Colors.blue,
@@ -48,7 +48,7 @@ class StatsPage extends StatelessWidget {
                     const SizedBox(width: 16),
                     Expanded(
                       child: _buildStatCard(
-                        'Total titres',
+                        'Total Tracks',
                         '${controller.totalTracks.value}',
                         Icons.music_note,
                         Colors.orange,
@@ -63,7 +63,7 @@ class StatsPage extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _buildStatCard(
-                        'Artistes écoutés',
+                        'Artists Played',
                         '${controller.totalArtists.value}',
                         Icons.person,
                         Colors.purple,
@@ -72,7 +72,7 @@ class StatsPage extends StatelessWidget {
                     const SizedBox(width: 16),
                     Expanded(
                       child: _buildStatCard(
-                        'Genres favoris',
+                        'Favorite Genres',
                         '${controller.favoriteGenres.length}',
                         Icons.category,
                         Colors.green,
@@ -83,9 +83,9 @@ class StatsPage extends StatelessWidget {
 
                 const SizedBox(height: 32),
 
-                // Graphique des genres favoris
+                // Favorite genres chart
                 Text(
-                  'Genres musicaux',
+                  'Music Genres',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -140,9 +140,9 @@ class StatsPage extends StatelessWidget {
 
                 const SizedBox(height: 32),
 
-                // Statistiques mensuelles
+                // Monthly statistics
                 Text(
-                  'Écoute mensuelle (heures)',
+                  'Monthly Listening (hours)',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -178,7 +178,7 @@ class StatsPage extends StatelessWidget {
                             ),
                             Expanded(
                               child: LinearProgressIndicator(
-                                value: month['hours'] / 70, // Normalisation sur 70h max
+                                value: month['hours'] / 70, // Normalized to 70h max
                                 backgroundColor: Colors.grey[300],
                                 valueColor: const AlwaysStoppedAnimation<Color>(
                                   Color(0xFF1DB954),

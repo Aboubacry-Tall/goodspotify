@@ -10,11 +10,11 @@ import '../services/firebase_service.dart';
 class MainBinding extends Bindings {
   @override
   void dependencies() {
-    // Injecter les services d'abord
+    // Inject services first
     Get.put<SpotifyService>(SpotifyService(), permanent: true);
     Get.put<FirebaseService>(FirebaseService(), permanent: true);
     
-    // Injecter tous les contrôleurs principaux
+    // Inject all main controllers
     Get.lazyPut<NavigationController>(() => NavigationController());
     Get.lazyPut<HomeController>(() => HomeController());
     Get.lazyPut<TopController>(() => TopController());

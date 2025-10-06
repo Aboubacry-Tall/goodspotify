@@ -34,14 +34,14 @@ class MainPage extends StatelessWidget {
           type: BottomNavigationBarType.fixed,
           currentIndex: navController.selectedIndex.value,
           onTap: navController.changeTabIndex,
-          selectedItemColor: const Color(0xFF1DB954), // Vert Spotify
+          selectedItemColor: const Color(0xFF1DB954), // Spotify green
           unselectedItemColor: Colors.grey,
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           elevation: 8,
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.home),
-              label: 'Accueil',
+              label: 'Home',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.trending_up),
@@ -53,7 +53,7 @@ class MainPage extends StatelessWidget {
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.settings),
-              label: 'Paramètres',
+              label: 'Settings',
             ),
           ],
         );

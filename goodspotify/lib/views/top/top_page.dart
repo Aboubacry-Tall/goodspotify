@@ -20,16 +20,16 @@ class TopPage extends StatelessWidget {
             onSelected: controller.changeTimeRange,
             itemBuilder: (context) => [
               const PopupMenuItem(
-                value: 'short_term',
-                child: Text('4 dernières semaines'),
-              ),
-              const PopupMenuItem(
-                value: 'medium_term',
-                child: Text('6 derniers mois'),
-              ),
-              const PopupMenuItem(
-                value: 'long_term',
-                child: Text('Depuis toujours'),
+              value: 'short_term',
+              child: Text('Last 4 weeks'),
+            ),
+            const PopupMenuItem(
+              value: 'medium_term',
+              child: Text('Last 6 months'),
+            ),
+            const PopupMenuItem(
+              value: 'long_term',
+              child: Text('All time'),
               ),
             ],
             child: Container(
@@ -57,7 +57,7 @@ class TopPage extends StatelessWidget {
                             : null,
                       ),
                       child: Text(
-                        'Titres',
+                        'Tracks',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: controller.selectedTabIndex.value == 0 
@@ -82,7 +82,7 @@ class TopPage extends StatelessWidget {
                             : null,
                       ),
                       child: Text(
-                        'Artistes',
+                        'Artists',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: controller.selectedTabIndex.value == 1 
@@ -182,13 +182,13 @@ class TopPage extends StatelessWidget {
               children: [
                 const Icon(Icons.play_circle_outline),
                 Text(
-                  '${track['plays']} écoutes',
+                  '${track['plays']} plays',
                   style: const TextStyle(fontSize: 12),
                 ),
               ],
             ),
             onTap: () {
-              // Action de lecture
+              // Play action
             },
           ),
         );
@@ -217,7 +217,7 @@ class TopPage extends StatelessWidget {
             subtitle: Text('${artist['genre']} • ${artist['followers']} followers'),
             trailing: const Icon(Icons.person_outline),
             onTap: () {
-              // Naviguer vers la page de l'artiste
+              // Navigate to artist page
             },
           ),
         );
@@ -246,7 +246,7 @@ class TopPage extends StatelessWidget {
             subtitle: Text('${album['artist']} • ${album['year']}'),
             trailing: const Icon(Icons.album_outlined),
             onTap: () {
-              // Naviguer vers la page de l'album
+              // Navigate to album page
             },
           ),
         );

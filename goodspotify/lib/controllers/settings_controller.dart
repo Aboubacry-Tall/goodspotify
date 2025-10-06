@@ -4,10 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/spotify_service.dart';
 
 class SettingsController extends GetxController {
-  // Variables observables pour la page Settings
+  // Observable variables for Settings page
   var isDarkMode = false.obs;
   var isNotificationsEnabled = true.obs;
-  var selectedLanguage = 'fr'.obs;
+  var selectedLanguage = 'en'.obs;
   var audioQuality = 'high'.obs;
   var isOfflineMode = false.obs;
   var isSpotifyConnected = false.obs;
@@ -18,74 +18,74 @@ class SettingsController extends GetxController {
     loadSettings();
   }
 
-  // Charger les paramètres sauvegardés
+  // Load saved settings
   Future<void> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     
     isDarkMode.value = prefs.getBool('darkMode') ?? false;
     isNotificationsEnabled.value = prefs.getBool('notifications') ?? true;
-    selectedLanguage.value = prefs.getString('language') ?? 'fr';
+    selectedLanguage.value = prefs.getString('language') ?? 'en';
     audioQuality.value = prefs.getString('audioQuality') ?? 'high';
     isOfflineMode.value = prefs.getBool('offlineMode') ?? false;
     isSpotifyConnected.value = prefs.getBool('spotifyConnected') ?? false;
   }
 
-  // Changer le mode sombre
+  // Toggle dark mode
   Future<void> toggleDarkMode() async {
     isDarkMode.value = !isDarkMode.value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('darkMode', isDarkMode.value);
     
-    // Changer le thème de l'application
+    // Change application theme
     Get.changeThemeMode(isDarkMode.value ? ThemeMode.dark : ThemeMode.light);
   }
 
-  // Changer les notifications
+  // Toggle notifications
   Future<void> toggleNotifications() async {
     isNotificationsEnabled.value = !isNotificationsEnabled.value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('notifications', isNotificationsEnabled.value);
   }
 
-  // Changer la langue
+  // Change language
   Future<void> changeLanguage(String language) async {
     selectedLanguage.value = language;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('language', language);
     
-    // Changer la locale de l'application
+    // Change application locale
     Get.updateLocale(Locale(language));
   }
 
-  // Changer la qualité audio
+  // Change audio quality
   Future<void> changeAudioQuality(String quality) async {
     audioQuality.value = quality;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('audioQuality', quality);
   }
 
-  // Mode hors ligne
+  // Toggle offline mode
   Future<void> toggleOfflineMode() async {
     isOfflineMode.value = !isOfflineMode.value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('offlineMode', isOfflineMode.value);
   }
 
-  // Connexion/Déconnexion Spotify
+  // Connect/Disconnect Spotify
   Future<void> toggleSpotifyConnection() async {
     if (isSpotifyConnected.value) {
-      // Déconnecter de Spotify
+      // Disconnect from Spotify
       await disconnectSpotify();
     } else {
-      // Connecter à Spotify
+      // Connect to Spotify
       await connectSpotify();
     }
   }
 
-  // Connecter à Spotify
+  // Connect to Spotify
   Future<void> connectSpotify() async {
     try {
-      // Utiliser le service Spotify pour l'authentification
+      // Use Spotify service for authentication
       final spotifyService = Get.find<SpotifyService>();
       final success = await spotifyService.authenticate();
       
@@ -95,19 +95,19 @@ class SettingsController extends GetxController {
         await prefs.setBool('spotifyConnected', true);
         
         Get.snackbar(
-          'Succès',
-          'Connecté à Spotify avec succès',
+          'Success',
+          'Connected to Spotify successfully',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: const Color(0xFF1DB954),
           colorText: Colors.white,
         );
       } else {
-        throw Exception('Échec de l\'authentification');
+        throw Exception('Authentication failed');
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible de se connecter à Spotify',
+        'Error',
+        'Unable to connect to Spotify',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
@@ -115,10 +115,10 @@ class SettingsController extends GetxController {
     }
   }
 
-  // Déconnecter de Spotify
+  // Disconnect from Spotify
   Future<void> disconnectSpotify() async {
     try {
-      // Utiliser le service Spotify pour la déconnexion
+      // Use Spotify service for disconnection
       final spotifyService = Get.find<SpotifyService>();
       await spotifyService.disconnect();
       
@@ -127,16 +127,16 @@ class SettingsController extends GetxController {
       await prefs.setBool('spotifyConnected', false);
       
       Get.snackbar(
-        'Déconnecté',
-        'Déconnecté de Spotify avec succès',
+        'Disconnected',
+        'Disconnected from Spotify successfully',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.orange,
         colorText: Colors.white,
       );
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Erreur lors de la déconnexion',
+        'Error',
+        'Error during disconnection',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,

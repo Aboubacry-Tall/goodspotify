@@ -2,16 +2,16 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SpotifyService extends GetxService {
-  // Configuration Spotify Web API (sans SDK)
-  static const String clientId = 'VOTRE_CLIENT_ID_SPOTIFY';
-  static const String clientSecret = 'VOTRE_CLIENT_SECRET_SPOTIFY';
+  // Spotify Web API configuration (without SDK)
+  static const String clientId = 'YOUR_SPOTIFY_CLIENT_ID';
+  static const String clientSecret = 'YOUR_SPOTIFY_CLIENT_SECRET';
   static const String redirectUri = 'http://localhost:8888/callback';
   static const String scope = 'user-read-private user-read-email user-top-read user-read-recently-played playlist-read-private';
   
   String? _accessToken;
   String? _refreshToken;
   
-  // Getter pour vérifier si l'utilisateur est connecté
+  // Getter to check if user is connected
   bool get isConnected => _accessToken != null;
   
   @override
@@ -20,14 +20,14 @@ class SpotifyService extends GetxService {
     await _loadTokensFromStorage();
   }
 
-  // Charger les tokens depuis le stockage local
+  // Load tokens from local storage
   Future<void> _loadTokensFromStorage() async {
     final prefs = await SharedPreferences.getInstance();
     _accessToken = prefs.getString('spotify_access_token');
     _refreshToken = prefs.getString('spotify_refresh_token');
   }
 
-  // Sauvegarder les tokens dans le stockage local
+  // Save tokens to local storage
   Future<void> _saveTokensToStorage() async {
     final prefs = await SharedPreferences.getInstance();
     if (_accessToken != null) {
@@ -38,14 +38,14 @@ class SpotifyService extends GetxService {
     }
   }
 
-  // Authentification Spotify Web API (sans SDK)
+  // Spotify Web API authentication (without SDK)
   Future<bool> authenticate() async {
     try {
-      // Pour l'instant, simulation d'une authentification réussie
-      // Dans une vraie implémentation, vous utiliseriez l'OAuth2 flow
-      // avec url_launcher pour ouvrir le navigateur
+      // For now, simulating successful authentication
+      // In a real implementation, you would use OAuth2 flow
+      // with url_launcher to open the browser
       
-      print('🎵 Simulation de l\'authentification Spotify...');
+      print('🎵 Simulating Spotify authentication...');
       await Future.delayed(const Duration(seconds: 2));
       
       _accessToken = 'fake_access_token_${DateTime.now().millisecondsSinceEpoch}';
@@ -53,15 +53,15 @@ class SpotifyService extends GetxService {
       
       await _saveTokensToStorage();
       
-      print('✅ Authentification Spotify simulée avec succès');
+      print('✅ Spotify authentication simulated successfully');
       return true;
     } catch (e) {
-      print('❌ Erreur d\'authentification Spotify: $e');
+      print('❌ Spotify authentication error: $e');
       return false;
     }
   }
 
-  // Obtenir l'URL d'autorisation Spotify (pour usage futur)
+  // Get Spotify authorization URL (for future use)
   String getAuthorizationUrl() {
     final params = {
       'client_id': clientId,
@@ -78,7 +78,7 @@ class SpotifyService extends GetxService {
     return 'https://accounts.spotify.com/authorize?$query';
   }
 
-  // Déconnexion
+  // Disconnect
   Future<void> disconnect() async {
     _accessToken = null;
     _refreshToken = null;
@@ -88,28 +88,28 @@ class SpotifyService extends GetxService {
     await prefs.remove('spotify_refresh_token');
   }
 
-  // Obtenir le profil utilisateur
+  // Get user profile
   Future<Map<String, dynamic>?> getUserProfile() async {
     if (!isConnected) return null;
 
     try {
-      // Simulation de données utilisateur
+      // User data simulation
       await Future.delayed(const Duration(seconds: 1));
       
       return {
         'id': 'user123',
-        'display_name': 'Utilisateur Test',
+        'display_name': 'Test User',
         'email': 'user@example.com',
         'followers': {'total': 10},
         'images': [],
       };
     } catch (e) {
-      print('Erreur lors de la récupération du profil: $e');
+      print('Error retrieving profile: $e');
       return null;
     }
   }
 
-  // Obtenir les top tracks
+  // Get top tracks
   Future<List<Map<String, dynamic>>> getTopTracks({
     String timeRange = 'medium_term',
     int limit = 20,
@@ -117,7 +117,7 @@ class SpotifyService extends GetxService {
     if (!isConnected) return [];
 
     try {
-      // Simulation de données
+      // Data simulation
       await Future.delayed(const Duration(seconds: 1));
       
       return List.generate(limit, (index) => {
@@ -132,12 +132,12 @@ class SpotifyService extends GetxService {
         'duration_ms': 180000 + (index * 1000),
       });
     } catch (e) {
-      print('Erreur lors de la récupération des top tracks: $e');
+      print('Error retrieving top tracks: $e');
       return [];
     }
   }
 
-  // Obtenir les top artistes
+  // Get top artists
   Future<List<Map<String, dynamic>>> getTopArtists({
     String timeRange = 'medium_term',
     int limit = 20,
@@ -145,7 +145,7 @@ class SpotifyService extends GetxService {
     if (!isConnected) return [];
 
     try {
-      // Simulation de données
+      // Data simulation
       await Future.delayed(const Duration(seconds: 1));
       
       return List.generate(limit, (index) => {
@@ -157,17 +157,17 @@ class SpotifyService extends GetxService {
         'popularity': 95 - index,
       });
     } catch (e) {
-      print('Erreur lors de la récupération des top artistes: $e');
+      print('Error retrieving top artists: $e');
       return [];
     }
   }
 
-  // Obtenir les morceaux récents
+  // Get recently played tracks
   Future<List<Map<String, dynamic>>> getRecentlyPlayed({int limit = 20}) async {
     if (!isConnected) return [];
 
     try {
-      // Simulation de données
+      // Data simulation
       await Future.delayed(const Duration(seconds: 1));
       
       return List.generate(limit, (index) => {
@@ -183,21 +183,21 @@ class SpotifyService extends GetxService {
         'played_at': DateTime.now().subtract(Duration(hours: index)).toIso8601String(),
       });
     } catch (e) {
-      print('Erreur lors de la récupération des morceaux récents: $e');
+      print('Error retrieving recent tracks: $e');
       return [];
     }
   }
 
-  // Obtenir les statistiques d'écoute
+  // Get listening statistics
   Future<Map<String, dynamic>?> getListeningStats() async {
     if (!isConnected) return null;
 
     try {
-      // Simulation de statistiques
+      // Statistics simulation
       await Future.delayed(const Duration(seconds: 1));
       
       return {
-        'total_listening_time': 125400, // en secondes
+        'total_listening_time': 125400, // in seconds
         'total_tracks': 1250,
         'total_artists': 150,
         'favorite_genres': [
@@ -212,7 +212,7 @@ class SpotifyService extends GetxService {
         }),
       };
     } catch (e) {
-      print('Erreur lors de la récupération des statistiques: $e');
+      print('Error retrieving statistics: $e');
       return null;
     }
   }

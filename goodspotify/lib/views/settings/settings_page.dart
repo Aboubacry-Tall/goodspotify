@@ -11,7 +11,7 @@ class SettingsPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Paramètres'),
+        title: const Text('Settings'),
         backgroundColor: const Color(0xFF1DB954),
         foregroundColor: Colors.white,
         elevation: 0,
@@ -20,8 +20,8 @@ class SettingsPage extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
-            // Section Compte
-            _buildSectionHeader('Compte'),
+            // Account Section
+            _buildSectionHeader('Account'),
             Card(
               child: Column(
                 children: [
@@ -35,11 +35,11 @@ class SettingsPage extends StatelessWidget {
                           : const Color(0xFF1DB954),
                     ),
                     title: Text(controller.isSpotifyConnected.value
-                        ? 'Connecté à Spotify'
-                        : 'Connecter à Spotify'),
+                        ? 'Connected to Spotify'
+                        : 'Connect to Spotify'),
                     subtitle: Text(controller.isSpotifyConnected.value
-                        ? 'Vos données sont synchronisées'
-                        : 'Connectez-vous pour accéder à vos données'),
+                        ? 'Your data is synchronized'
+                        : 'Connect to access your data'),
                     trailing: ElevatedButton(
                       onPressed: controller.toggleSpotifyConnection,
                       style: ElevatedButton.styleFrom(
@@ -49,8 +49,8 @@ class SettingsPage extends StatelessWidget {
                         foregroundColor: Colors.white,
                       ),
                       child: Text(controller.isSpotifyConnected.value
-                          ? 'Déconnecter'
-                          : 'Connecter'),
+                          ? 'Disconnect'
+                          : 'Connect'),
                     ),
                   ),
                 ],
@@ -59,14 +59,14 @@ class SettingsPage extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // Section Apparence
-            _buildSectionHeader('Apparence'),
+            // Appearance Section
+            _buildSectionHeader('Appearance'),
             Card(
               child: Column(
                 children: [
                   SwitchListTile(
-                    title: const Text('Mode sombre'),
-                    subtitle: const Text('Activer le thème sombre'),
+                    title: const Text('Dark Mode'),
+                    subtitle: const Text('Enable dark theme'),
                     value: controller.isDarkMode.value,
                     onChanged: (_) => controller.toggleDarkMode(),
                     activeColor: const Color(0xFF1DB954),
@@ -75,7 +75,7 @@ class SettingsPage extends StatelessWidget {
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.language),
-                    title: const Text('Langue'),
+                    title: const Text('Language'),
                     subtitle: Text(_getLanguageName(controller.selectedLanguage.value)),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => _showLanguageDialog(context, controller),
@@ -86,22 +86,22 @@ class SettingsPage extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // Section Audio
+            // Audio Section
             _buildSectionHeader('Audio'),
             Card(
               child: Column(
                 children: [
                   ListTile(
                     leading: const Icon(Icons.high_quality),
-                    title: const Text('Qualité audio'),
+                    title: const Text('Audio Quality'),
                     subtitle: Text(_getQualityName(controller.audioQuality.value)),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => _showQualityDialog(context, controller),
                   ),
                   const Divider(height: 1),
                   SwitchListTile(
-                    title: const Text('Mode hors ligne'),
-                    subtitle: const Text('Sauvegarder pour écoute hors ligne'),
+                    title: const Text('Offline Mode'),
+                    subtitle: const Text('Save for offline listening'),
                     value: controller.isOfflineMode.value,
                     onChanged: (_) => controller.toggleOfflineMode(),
                     activeColor: const Color(0xFF1DB954),
@@ -113,12 +113,12 @@ class SettingsPage extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // Section Notifications
+            // Notifications Section
             _buildSectionHeader('Notifications'),
             Card(
               child: SwitchListTile(
-                title: const Text('Notifications push'),
-                subtitle: const Text('Recevoir des alertes et recommandations'),
+                title: const Text('Push Notifications'),
+                subtitle: const Text('Receive alerts and recommendations'),
                 value: controller.isNotificationsEnabled.value,
                 onChanged: (_) => controller.toggleNotifications(),
                 activeColor: const Color(0xFF1DB954),
@@ -128,8 +128,8 @@ class SettingsPage extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // Section À propos
-            _buildSectionHeader('À propos'),
+            // About Section
+            _buildSectionHeader('About'),
             Card(
               child: Column(
                 children: [
@@ -141,19 +141,19 @@ class SettingsPage extends StatelessWidget {
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.privacy_tip),
-                    title: const Text('Politique de confidentialité'),
+                    title: const Text('Privacy Policy'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
-                      // Ouvrir la politique de confidentialité
+                      // Open privacy policy
                     },
                   ),
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.description),
-                    title: const Text('Conditions d\'utilisation'),
+                    title: const Text('Terms of Service'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
-                      // Ouvrir les conditions d'utilisation
+                      // Open terms of service
                     },
                   ),
                 ],
@@ -190,20 +190,20 @@ class SettingsPage extends StatelessWidget {
       case 'es':
         return 'Español';
       default:
-        return 'Français';
+        return 'English';
     }
   }
 
   String _getQualityName(String quality) {
     switch (quality) {
       case 'low':
-        return 'Basse (96 kbps)';
+        return 'Low (96 kbps)';
       case 'normal':
-        return 'Normale (160 kbps)';
+        return 'Normal (160 kbps)';
       case 'high':
-        return 'Haute (320 kbps)';
+        return 'High (320 kbps)';
       default:
-        return 'Haute (320 kbps)';
+        return 'High (320 kbps)';
     }
   }
 
@@ -211,7 +211,7 @@ class SettingsPage extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Choisir la langue'),
+        title: const Text('Choose Language'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -261,13 +261,13 @@ class SettingsPage extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Qualité audio'),
+        title: const Text('Audio Quality'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             RadioListTile<String>(
-              title: const Text('Basse (96 kbps)'),
-              subtitle: const Text('Économise la bande passante'),
+              title: const Text('Low (96 kbps)'),
+              subtitle: const Text('Saves bandwidth'),
               value: 'low',
               groupValue: controller.audioQuality.value,
               onChanged: (value) {
@@ -279,8 +279,8 @@ class SettingsPage extends StatelessWidget {
               activeColor: const Color(0xFF1DB954),
             ),
             RadioListTile<String>(
-              title: const Text('Normale (160 kbps)'),
-              subtitle: const Text('Équilibre qualité/data'),
+              title: const Text('Normal (160 kbps)'),
+              subtitle: const Text('Balanced quality/data'),
               value: 'normal',
               groupValue: controller.audioQuality.value,
               onChanged: (value) {
@@ -292,8 +292,8 @@ class SettingsPage extends StatelessWidget {
               activeColor: const Color(0xFF1DB954),
             ),
             RadioListTile<String>(
-              title: const Text('Haute (320 kbps)'),
-              subtitle: const Text('Meilleure qualité'),
+              title: const Text('High (320 kbps)'),
+              subtitle: const Text('Best quality'),
               value: 'high',
               groupValue: controller.audioQuality.value,
               onChanged: (value) {

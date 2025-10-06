@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
 
 class TopController extends GetxController with GetSingleTickerProviderStateMixin {
-  // Variables observables pour la page Top
+  // Observable variables for Top page
   var isLoading = false.obs;
   var selectedTabIndex = 0.obs;
   var topTracks = <Map<String, dynamic>>[].obs;
@@ -15,15 +15,15 @@ class TopController extends GetxController with GetSingleTickerProviderStateMixi
     loadTopData();
   }
 
-  // Charger les données top
+  // Load top data
   Future<void> loadTopData() async {
     try {
       isLoading.value = true;
       
-      // Simulation de chargement de données
+      // Data loading simulation
       await Future.delayed(const Duration(seconds: 2));
       
-      // Ici vous intégrerez l'API Spotify
+      // Here you will integrate the Spotify API
       topTracks.value = [
         {'name': 'Top Track 1', 'artist': 'Artist 1', 'plays': 250},
         {'name': 'Top Track 2', 'artist': 'Artist 2', 'plays': 200},
@@ -47,18 +47,18 @@ class TopController extends GetxController with GetSingleTickerProviderStateMixi
     }
   }
 
-  // Changer l'onglet sélectionné
+  // Change selected tab
   void changeTabIndex(int index) {
     selectedTabIndex.value = index;
   }
 
-  // Changer la période de temps
+  // Change time range
   void changeTimeRange(String range) {
     timeRange.value = range;
-    loadTopData(); // Recharger les données avec la nouvelle période
+    loadTopData(); // Reload data with new time range
   }
 
-  // Rafraîchir les données
+  // Refresh data
   Future<void> refreshData() async {
     await loadTopData();
   }

@@ -50,7 +50,7 @@ class HomePage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Bonjour !',
+                        'Welcome!',
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -58,7 +58,7 @@ class HomePage extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Découvrez vos statistiques Spotify',
+                        'Discover your Spotify statistics',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.white70,
                         ),
@@ -69,9 +69,9 @@ class HomePage extends StatelessWidget {
 
                 const SizedBox(height: 24),
 
-                // Section Morceaux récents
+                // Recently played section
                 Text(
-                  'Écoutés récemment',
+                  'Recently Played',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -106,7 +106,7 @@ class HomePage extends StatelessWidget {
                         subtitle: Text(track['artist'] ?? ''),
                         trailing: const Icon(Icons.play_circle_outline),
                         onTap: () {
-                          // Action de lecture
+                          // Play action
                         },
                       ),
                     );
@@ -115,9 +115,9 @@ class HomePage extends StatelessWidget {
 
                 const SizedBox(height: 24),
 
-                // Section Recommandations
+                // Recommendations section
                 Text(
-                  'Recommandations',
+                  'Recommendations',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
