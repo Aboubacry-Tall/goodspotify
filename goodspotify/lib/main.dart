@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'bindings/main_binding.dart';
-import 'views/main_page.dart';
+import 'views/app_navigator.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Ici vous initialiserez Firebase
-  // await Firebase.initializeApp();
+  // Firebase sera initialisé plus tard quand nécessaire
+  // Pour l'instant, l'authentification Spotify fonctionne sans Firebase
   
   runApp(const GoodSpotifyApp());
 }
@@ -31,7 +31,7 @@ class GoodSpotifyApp extends StatelessWidget {
       initialBinding: MainBinding(),
       
       // Home page
-      home: const MainPage(),
+      home: const AppNavigator(),
       
       // Locale configuration
       locale: const Locale('en', 'US'),

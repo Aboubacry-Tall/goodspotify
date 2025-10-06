@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/settings_controller.dart';
+import '../../controllers/auth_controller.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -8,6 +9,7 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final SettingsController controller = Get.find();
+    final AuthController authController = Get.find();
 
     return Scaffold(
       appBar: AppBar(
@@ -27,28 +29,28 @@ class SettingsPage extends StatelessWidget {
                 children: [
                   ListTile(
                     leading: Icon(
-                      controller.isSpotifyConnected.value
+                      authController.isAuthenticated.value
                           ? Icons.check_circle
                           : Icons.music_note,
-                      color: controller.isSpotifyConnected.value
+                      color: authController.isAuthenticated.value
                           ? Colors.green
                           : const Color(0xFF1DB954),
                     ),
-                    title: Text(controller.isSpotifyConnected.value
+                    title: Text(authController.isAuthenticated.value
                         ? 'Connected to Spotify'
                         : 'Connect to Spotify'),
-                    subtitle: Text(controller.isSpotifyConnected.value
+                    subtitle: Text(authController.isAuthenticated.value
                         ? 'Your data is synchronized'
                         : 'Connect to access your data'),
                     trailing: ElevatedButton(
                       onPressed: controller.toggleSpotifyConnection,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: controller.isSpotifyConnected.value
+                        backgroundColor: authController.isAuthenticated.value
                             ? Colors.red
                             : const Color(0xFF1DB954),
                         foregroundColor: Colors.white,
                       ),
-                      child: Text(controller.isSpotifyConnected.value
+                      child: Text(authController.isAuthenticated.value
                           ? 'Disconnect'
                           : 'Connect'),
                     ),

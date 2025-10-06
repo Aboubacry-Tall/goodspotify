@@ -1,15 +1,184 @@
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+// Authorization response model
+class AuthorizationResponse {
+  final String? code;
+  final String? error;
+  
+  AuthorizationResponse({this.code, this.error});
+}
+
+// Access token response model
+class AccessTokenResponse {
+  final String? accessToken;
+  final String? refreshToken;
+  final String? tokenType;
+  final int? expiresIn;
+  
+  AccessTokenResponse({
+    this.accessToken,
+    this.refreshToken,
+    this.tokenType,
+    this.expiresIn,
+  });
+}
+
+// Custom OAuth2 Client for Spotify based on your example
+class SpotifyOAuth2Client {
+  final String customUriScheme;
+  final String redirectUri;
+  final String authorizeUrl = 'https://accounts.spotify.com/authorize';
+  final String tokenUrl = 'https://accounts.spotify.com/api/token';
+
+  SpotifyOAuth2Client({
+    required this.customUriScheme,
+    required this.redirectUri,
+  });
+
+  // Request authorization
+  Future<AuthorizationResponse> requestAuthorization({
+    required String clientId,
+    Map<String, String>? customParams,
+    List<String>? scopes,
+  }) async {
+    try {
+      // Build authorization URL
+      final params = {
+        'client_id': clientId,
+        'response_type': 'code',
+        'redirect_uri': redirectUri,
+        if (scopes != null) 'scope': scopes.join(' '),
+        ...?customParams,
+      };
+      
+      final query = params.entries
+          .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .join('&');
+      
+      final authorizationUrl = '$authorizeUrl?$query';
+      print('🔗 Authorization URL: $authorizationUrl');
+
+      // Use flutter_web_auth_2 to open browser and get callback
+      final result = await FlutterWebAuth2.authenticate(
+        url: authorizationUrl,
+        callbackUrlScheme: customUriScheme,
+      );
+
+      print('🔄 Authentication result received: $result');
+
+      // Parse the authorization code from callback
+      final uri = Uri.parse(result);
+      final code = uri.queryParameters['code'];
+      final error = uri.queryParameters['error'];
+
+      return AuthorizationResponse(code: code, error: error);
+    } catch (e) {
+      print('❌ Authorization error: $e');
+      return AuthorizationResponse(error: e.toString());
+    }
+  }
+
+  // Request access token
+  Future<AccessTokenResponse> requestAccessToken({
+    required String code,
+    required String clientId,
+    required String clientSecret,
+  }) async {
+    try {
+      print('🔄 Exchanging code for access token...');
+
+      final response = await http.post(
+        Uri.parse(tokenUrl),
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {
+          'grant_type': 'authorization_code',
+          'code': code,
+          'redirect_uri': redirectUri,
+          'client_id': clientId,
+          'client_secret': clientSecret,
+        },
+      );
+
+      print('📡 Token exchange response: ${response.statusCode}');
+      print('📄 Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return AccessTokenResponse(
+          accessToken: data['access_token'],
+          refreshToken: data['refresh_token'],
+          tokenType: data['token_type'],
+          expiresIn: data['expires_in'],
+        );
+      } else {
+        print('❌ Token exchange failed: ${response.statusCode}');
+        return AccessTokenResponse();
+      }
+    } catch (e) {
+      print('❌ Error exchanging code for token: $e');
+      return AccessTokenResponse();
+    }
+  }
+
+  // Refresh token
+  Future<AccessTokenResponse> refreshToken({
+    required String refreshToken,
+    required String clientId,
+    required String clientSecret,
+  }) async {
+    try {
+      print('🔄 Refreshing access token...');
+      
+      final response = await http.post(
+        Uri.parse(tokenUrl),
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {
+          'grant_type': 'refresh_token',
+          'refresh_token': refreshToken,
+          'client_id': clientId,
+          'client_secret': clientSecret,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return AccessTokenResponse(
+          accessToken: data['access_token'],
+          refreshToken: data['refresh_token'] ?? refreshToken,
+          tokenType: data['token_type'],
+          expiresIn: data['expires_in'],
+        );
+      } else {
+        print('❌ Token refresh failed: ${response.statusCode}');
+        return AccessTokenResponse();
+      }
+    } catch (e) {
+      print('❌ Error refreshing token: $e');
+      return AccessTokenResponse();
+    }
+  }
+}
 
 class SpotifyService extends GetxService {
   // Spotify Web API configuration (without SDK)
-  static const String clientId = 'YOUR_SPOTIFY_CLIENT_ID';
-  static const String clientSecret = 'YOUR_SPOTIFY_CLIENT_SECRET';
-  static const String redirectUri = 'http://localhost:8888/callback';
+  static const String clientId = '8009dbccda7740a5a176d809ef5a5287';
+  static const String clientSecret = '74a4898e9e1240d1b000c27fc92c25dd';
+  static const String redirectUri = 'com.goodspotify.stream://callback';
   static const String scope = 'user-read-private user-read-email user-top-read user-read-recently-played playlist-read-private';
   
   String? _accessToken;
   String? _refreshToken;
+  
+  // OAuth2 Client for Spotify
+  late SpotifyOAuth2Client _oauth2Client;
   
   // Getter to check if user is connected
   bool get isConnected => _accessToken != null;
@@ -17,6 +186,13 @@ class SpotifyService extends GetxService {
   @override
   Future<void> onInit() async {
     super.onInit();
+    
+    // Initialize OAuth2 Client for Spotify
+    _oauth2Client = SpotifyOAuth2Client(
+      customUriScheme: 'com.goodspotify.stream',
+      redirectUri: redirectUri,
+    );
+    
     await _loadTokensFromStorage();
   }
 
@@ -38,44 +214,91 @@ class SpotifyService extends GetxService {
     }
   }
 
-  // Spotify Web API authentication (without SDK)
+  // Spotify Web API authentication using oauth2_client
   Future<bool> authenticate() async {
     try {
-      // For now, simulating successful authentication
-      // In a real implementation, you would use OAuth2 flow
-      // with url_launcher to open the browser
-      
-      print('🎵 Simulating Spotify authentication...');
-      await Future.delayed(const Duration(seconds: 2));
-      
-      _accessToken = 'fake_access_token_${DateTime.now().millisecondsSinceEpoch}';
-      _refreshToken = 'fake_refresh_token_${DateTime.now().millisecondsSinceEpoch}';
-      
-      await _saveTokensToStorage();
-      
-      print('✅ Spotify authentication simulated successfully');
-      return true;
+      print('🎵 Starting Spotify authentication with oauth2_client...');
+
+      // Step 1: Request authorization
+      var authResp = await _oauth2Client.requestAuthorization(
+        clientId: clientId,
+        customParams: {'show_dialog': 'true'},
+        scopes: scope.split(' '),
+      );
+
+      print('🔄 Authorization response received');
+      print('📋 Auth code: ${authResp.code != null ? '${authResp.code!.substring(0, 10)}...' : 'null'}');
+
+      if (authResp.code == null) {
+        print('❌ No authorization code received');
+        return false;
+      }
+
+      // Step 2: Exchange authorization code for access token
+      var accessToken = await _oauth2Client.requestAccessToken(
+        code: authResp.code.toString(),
+        clientId: clientId,
+        clientSecret: clientSecret,
+      );
+
+      if (accessToken != null && accessToken.accessToken != null) {
+        _accessToken = accessToken.accessToken;
+        _refreshToken = accessToken.refreshToken;
+        
+        await _saveTokensToStorage();
+        
+        print('🎉 Authentication completed successfully!');
+        print('🔑 Access token: ${_accessToken?.substring(0, 20)}...');
+        print('🔄 Refresh token: ${_refreshToken?.substring(0, 20)}...');
+        return true;
+      } else {
+        print('❌ Token exchange failed');
+        return false;
+      }
+
     } catch (e) {
       print('❌ Spotify authentication error: $e');
       return false;
     }
   }
 
-  // Get Spotify authorization URL (for future use)
-  String getAuthorizationUrl() {
-    final params = {
-      'client_id': clientId,
-      'response_type': 'code',
-      'redirect_uri': redirectUri,
-      'scope': scope,
-      'show_dialog': 'true',
-    };
-    
-    final query = params.entries
-        .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
-        .join('&');
-    
-    return 'https://accounts.spotify.com/authorize?$query';
+
+
+
+
+  // Refresh access token using oauth2_client
+  Future<bool> refreshAccessToken() async {
+    if (_refreshToken == null) return false;
+
+    try {
+      print('🔄 Refreshing access token with oauth2_client...');
+      
+      var accessToken = await _oauth2Client.refreshToken(
+        refreshToken: _refreshToken!,
+        clientId: clientId,
+        clientSecret: clientSecret,
+      );
+
+      if (accessToken != null && accessToken.accessToken != null) {
+        _accessToken = accessToken.accessToken;
+        
+        // Update refresh token if a new one is provided
+        if (accessToken.refreshToken != null) {
+          _refreshToken = accessToken.refreshToken;
+        }
+        
+        await _saveTokensToStorage();
+        
+        print('✅ Access token refreshed successfully with oauth2_client');
+        return true;
+      } else {
+        print('❌ Token refresh failed with oauth2_client');
+        return false;
+      }
+    } catch (e) {
+      print('❌ Error refreshing token with oauth2_client: $e');
+      return false;
+    }
   }
 
   // Disconnect

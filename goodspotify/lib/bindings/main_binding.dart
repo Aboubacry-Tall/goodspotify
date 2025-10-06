@@ -4,6 +4,7 @@ import '../controllers/home_controller.dart';
 import '../controllers/top_controller.dart';
 import '../controllers/stats_controller.dart';
 import '../controllers/settings_controller.dart';
+import '../controllers/auth_controller.dart';
 import '../services/spotify_service.dart';
 import '../services/firebase_service.dart';
 
@@ -15,6 +16,7 @@ class MainBinding extends Bindings {
     Get.put<FirebaseService>(FirebaseService(), permanent: true);
     
     // Inject all main controllers
+    Get.lazyPut<AuthController>(() => AuthController());
     Get.lazyPut<NavigationController>(() => NavigationController());
     Get.lazyPut<HomeController>(() => HomeController());
     Get.lazyPut<TopController>(() => TopController());

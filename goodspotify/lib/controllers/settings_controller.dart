@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../services/spotify_service.dart';
+import 'auth_controller.dart';
 
 class SettingsController extends GetxController {
   // Observable variables for Settings page
@@ -10,7 +10,6 @@ class SettingsController extends GetxController {
   var selectedLanguage = 'en'.obs;
   var audioQuality = 'high'.obs;
   var isOfflineMode = false.obs;
-  var isSpotifyConnected = false.obs;
 
   @override
   void onInit() {
@@ -27,7 +26,6 @@ class SettingsController extends GetxController {
     selectedLanguage.value = prefs.getString('language') ?? 'en';
     audioQuality.value = prefs.getString('audioQuality') ?? 'high';
     isOfflineMode.value = prefs.getBool('offlineMode') ?? false;
-    isSpotifyConnected.value = prefs.getBool('spotifyConnected') ?? false;
   }
 
   // Toggle dark mode
@@ -73,74 +71,26 @@ class SettingsController extends GetxController {
 
   // Connect/Disconnect Spotify
   Future<void> toggleSpotifyConnection() async {
-    if (isSpotifyConnected.value) {
+    final authController = Get.find<AuthController>();
+    
+    if (authController.isAuthenticated.value) {
       // Disconnect from Spotify
-      await disconnectSpotify();
+      await authController.disconnect();
     } else {
       // Connect to Spotify
-      await connectSpotify();
+      await authController.connectSpotify();
     }
   }
 
   // Connect to Spotify
   Future<void> connectSpotify() async {
-    try {
-      // Use Spotify service for authentication
-      final spotifyService = Get.find<SpotifyService>();
-      final success = await spotifyService.authenticate();
-      
-      if (success) {
-        isSpotifyConnected.value = true;
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('spotifyConnected', true);
-        
-        Get.snackbar(
-          'Success',
-          'Connected to Spotify successfully',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: const Color(0xFF1DB954),
-          colorText: Colors.white,
-        );
-      } else {
-        throw Exception('Authentication failed');
-      }
-    } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Unable to connect to Spotify',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
-    }
+    final authController = Get.find<AuthController>();
+    await authController.connectSpotify();
   }
 
   // Disconnect from Spotify
   Future<void> disconnectSpotify() async {
-    try {
-      // Use Spotify service for disconnection
-      final spotifyService = Get.find<SpotifyService>();
-      await spotifyService.disconnect();
-      
-      isSpotifyConnected.value = false;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('spotifyConnected', false);
-      
-      Get.snackbar(
-        'Disconnected',
-        'Disconnected from Spotify successfully',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
-      );
-    } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Error during disconnection',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
-    }
+    final authController = Get.find<AuthController>();
+    await authController.disconnect();
   }
 }
