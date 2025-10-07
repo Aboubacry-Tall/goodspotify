@@ -22,7 +22,39 @@ class AuthController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    _loadCachedUserInfo();
     checkAuthenticationStatus();
+  }
+
+  // Load cached user info for quick display
+  Future<void> _loadCachedUserInfo() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final displayName = prefs.getString('userDisplayName');
+      final email = prefs.getString('userEmail');
+      final userId = prefs.getString('userId');
+      final lastLoginTime = prefs.getString('lastLoginTime');
+      
+      if (displayName != null) {
+        // Create a minimal profile from cached data
+        userProfile.value = {
+          'id': userId ?? '',
+          'display_name': displayName,
+          'email': email ?? '',
+          'images': [],
+          'followers': {'total': 0},
+        };
+        
+        print('📱 Loaded cached user info: $displayName');
+        if (lastLoginTime != null) {
+          final lastLogin = DateTime.parse(lastLoginTime);
+          final timeDiff = DateTime.now().difference(lastLogin);
+          print('⏰ Last login: ${timeDiff.inHours} hours ago');
+        }
+      }
+    } catch (e) {
+      print('❌ Error loading cached user info: $e');
+    }
   }
 
   // Check if user is already authenticated
@@ -31,17 +63,98 @@ class AuthController extends GetxController {
       isLoading.value = true;
       
       final spotifyService = Get.find<SpotifyService>();
-      isAuthenticated.value = spotifyService.isConnected;
+      final prefs = await SharedPreferences.getInstance();
       
-      if (isAuthenticated.value) {
-        await loadUserProfile();
-        await loadAllUserData();
+      // Check if user was previously connected
+      final wasConnected = prefs.getBool('spotifyConnected') ?? false;
+      
+      if (wasConnected && spotifyService.isConnected) {
+        print('🔄 User was previously connected, verifying token...');
+        
+        // Check if session might be expired first
+        final isExpired = await _isSessionExpired();
+        if (isExpired) {
+          print('⏰ Session expired (more than 24 hours old), attempting refresh...');
+        }
+        
+        // Verify token is still valid by making a test API call
+        final isValid = await _verifyTokenValidity();
+        
+        if (isValid) {
+          print('✅ Token is valid, user is authenticated');
+          isAuthenticated.value = true;
+          await loadUserProfile();
+          await loadAllUserData();
+        } else {
+          print('❌ Token expired, attempting refresh...');
+          final refreshed = await spotifyService.refreshAccessToken();
+          
+          if (refreshed) {
+            print('✅ Token refreshed successfully');
+            isAuthenticated.value = true;
+            await loadUserProfile();
+            await loadAllUserData();
+          } else {
+            print('❌ Token refresh failed, user needs to reconnect');
+            await _clearAuthData();
+          }
+        }
+      } else {
+        print('ℹ️ User not previously connected or tokens not found');
+        isAuthenticated.value = false;
       }
     } catch (e) {
-      print('Error checking authentication status: $e');
+      print('❌ Error checking authentication status: $e');
       isAuthenticated.value = false;
+      await _clearAuthData();
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  // Verify if the current token is still valid
+  Future<bool> _verifyTokenValidity() async {
+    try {
+      final spotifyService = Get.find<SpotifyService>();
+      final profile = await spotifyService.getUserProfile();
+      return profile != null;
+    } catch (e) {
+      print('❌ Token verification failed: $e');
+      return false;
+    }
+  }
+
+  // Clear authentication data
+  Future<void> _clearAuthData() async {
+    try {
+      // Clear observable variables
+      isAuthenticated.value = false;
+      userProfile.value = null;
+      userData.value = null;
+      topArtists.clear();
+      topTracks.clear();
+      followedArtists.clear();
+      savedAlbums.clear();
+      savedTracks.clear();
+      recentlyPlayed.clear();
+      listeningStats.value = null;
+      
+      // Clear SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('spotifyConnected');
+      await prefs.remove('user_data');
+      await prefs.remove('lastLoginTime');
+      await prefs.remove('userDisplayName');
+      await prefs.remove('userEmail');
+      await prefs.remove('userId');
+      
+      // Clear tokens from Spotify service
+      final spotifyService = Get.find<SpotifyService>();
+      await spotifyService.disconnect();
+      
+      print('🧹 All authentication data cleared from memory and storage');
+    } catch (e) {
+      print('❌ Error clearing auth data: $e');
     }
   }
 
@@ -133,23 +246,8 @@ class AuthController extends GetxController {
       final spotifyService = Get.find<SpotifyService>();
       await spotifyService.disconnect();
       
-      isAuthenticated.value = false;
-      userProfile.value = null;
-      
-      // Clear all user data
-      userData.value = null;
-      topArtists.clear();
-      topTracks.clear();
-      followedArtists.clear();
-      savedAlbums.clear();
-      savedTracks.clear();
-      recentlyPlayed.clear();
-      listeningStats.value = null;
-      
-      // Clear saved preferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('spotifyConnected');
-      await prefs.remove('user_data');
+      // Clear all authentication data
+      await _clearAuthData();
       
       Get.snackbar(
         'Disconnected',
@@ -159,8 +257,10 @@ class AuthController extends GetxController {
         colorText: Colors.white,
         duration: const Duration(seconds: 3),
       );
+      
+      print('👋 User disconnected from Spotify');
     } catch (e) {
-      print('Disconnection error: $e');
+      print('❌ Disconnection error: $e');
       
       Get.snackbar(
         'Disconnection Error',
@@ -184,14 +284,58 @@ class AuthController extends GetxController {
       if (profile != null) {
         userProfile.value = profile;
         
-        // Save connection status
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('spotifyConnected', true);
+        // Save connection status and user info
+        await _saveAuthState();
+        
+        print('✅ User profile loaded and saved: ${profile['display_name']}');
       }
     } catch (e) {
-      print('Error loading user profile: $e');
+      print('❌ Error loading user profile: $e');
     }
   }
+
+  // Save authentication state to SharedPreferences
+  Future<void> _saveAuthState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Save connection status
+      await prefs.setBool('spotifyConnected', true);
+      
+      // Save login timestamp
+      await prefs.setString('lastLoginTime', DateTime.now().toIso8601String());
+      
+      // Save user basic info for quick access
+      if (userProfile.value != null) {
+        await prefs.setString('userDisplayName', userProfile.value!['display_name'] ?? '');
+        await prefs.setString('userEmail', userProfile.value!['email'] ?? '');
+        await prefs.setString('userId', userProfile.value!['id'] ?? '');
+      }
+      
+      print('💾 Authentication state saved to SharedPreferences');
+    } catch (e) {
+      print('❌ Error saving auth state: $e');
+    }
+  }
+
+  // Check if session might be expired (more than 24 hours old)
+  Future<bool> _isSessionExpired() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lastLoginTime = prefs.getString('lastLoginTime');
+      
+      if (lastLoginTime != null) {
+        final lastLogin = DateTime.parse(lastLoginTime);
+        final timeDiff = DateTime.now().difference(lastLogin);
+        return timeDiff.inHours > 24; // Consider expired after 24 hours
+      }
+      return true;
+    } catch (e) {
+      print('❌ Error checking session expiry: $e');
+      return true;
+    }
+  }
+
 
   // Load all user data from Spotify
   Future<void> loadAllUserData() async {

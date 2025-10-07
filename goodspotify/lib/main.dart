@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'bindings/main_binding.dart';
+import 'views/splash/splash_page.dart';
 import 'views/app_navigator.dart';
+import 'views/auth/auth_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,8 +32,24 @@ class GoodSpotifyApp extends StatelessWidget {
       // GetX configuration
       initialBinding: MainBinding(),
       
-      // Home page
-      home: const AppNavigator(),
+      // Routes configuration
+      getPages: [
+        GetPage(
+          name: '/',
+          page: () => const SplashPage(),
+        ),
+        GetPage(
+          name: '/auth',
+          page: () => const AuthPage(),
+        ),
+        GetPage(
+          name: '/home',
+          page: () => const AppNavigator(),
+        ),
+      ],
+      
+      // Initial route
+      initialRoute: '/',
       
       // Locale configuration
       locale: const Locale('en', 'US'),
