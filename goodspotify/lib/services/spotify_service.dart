@@ -241,7 +241,7 @@ class SpotifyService extends GetxService {
         clientSecret: clientSecret,
       );
 
-      if (accessToken != null && accessToken.accessToken != null) {
+      if (accessToken.accessToken != null) {
         _accessToken = accessToken.accessToken;
         _refreshToken = accessToken.refreshToken;
         
@@ -279,7 +279,7 @@ class SpotifyService extends GetxService {
         clientSecret: clientSecret,
       );
 
-      if (accessToken != null && accessToken.accessToken != null) {
+      if (accessToken.accessToken != null) {
         _accessToken = accessToken.accessToken;
         
         // Update refresh token if a new one is provided
@@ -313,21 +313,43 @@ class SpotifyService extends GetxService {
 
   // Get user profile
   Future<Map<String, dynamic>?> getUserProfile() async {
-    if (!isConnected) return null;
+    if (!isConnected) {
+      print('❌ Not connected to Spotify');
+      return null;
+    }
 
     try {
-      // User data simulation
-      await Future.delayed(const Duration(seconds: 1));
+      print('👤 Fetching user profile from Spotify API...');
       
-      return {
-        'id': 'user123',
-        'display_name': 'Test User',
-        'email': 'user@example.com',
-        'followers': {'total': 10},
-        'images': [],
-      };
+      final response = await http.get(
+        Uri.parse('https://api.spotify.com/v1/me'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      print('📡 User profile API response: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('✅ Retrieved user profile: ${data['display_name']}');
+        return data;
+      } else if (response.statusCode == 401) {
+        print('🔑 Token expired, attempting refresh...');
+        final refreshed = await refreshAccessToken();
+        if (refreshed) {
+          // Retry the request with new token
+          return await getUserProfile();
+        }
+        return null;
+      } else {
+        print('❌ Failed to fetch user profile: ${response.statusCode}');
+        print('Response: ${response.body}');
+        return null;
+      }
     } catch (e) {
-      print('Error retrieving profile: $e');
+      print('❌ Error retrieving user profile: $e');
       return null;
     }
   }
@@ -337,25 +359,46 @@ class SpotifyService extends GetxService {
     String timeRange = 'medium_term',
     int limit = 20,
   }) async {
-    if (!isConnected) return [];
+    if (!isConnected) {
+      print('❌ Not connected to Spotify');
+      return [];
+    }
 
     try {
-      // Data simulation
-      await Future.delayed(const Duration(seconds: 1));
+      print('🎵 Fetching top tracks from Spotify API...');
       
-      return List.generate(limit, (index) => {
-        'id': 'track_$index',
-        'name': 'Track ${index + 1}',
-        'artists': [{'name': 'Artist ${index + 1}'}],
-        'album': {
-          'name': 'Album ${index + 1}',
-          'images': [],
+      final response = await http.get(
+        Uri.parse('https://api.spotify.com/v1/me/top/tracks?time_range=$timeRange&limit=$limit'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+          'Content-Type': 'application/json',
         },
-        'popularity': 90 - index,
-        'duration_ms': 180000 + (index * 1000),
-      });
+      );
+
+      print('📡 Top tracks API response: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List<dynamic> tracks = data['items'] ?? [];
+        
+        print('✅ Retrieved ${tracks.length} top tracks');
+        
+        return tracks.cast<Map<String, dynamic>>();
+      } else if (response.statusCode == 401) {
+        print('🔑 Token expired, attempting refresh...');
+        final refreshed = await refreshAccessToken();
+        if (refreshed) {
+          // Retry the request with new token
+          return await getTopTracks(timeRange: timeRange, limit: limit);
+        }
+        return [];
+      } else {
+        print('❌ Failed to fetch top tracks: ${response.statusCode}');
+        print('Response: ${response.body}');
+        return [];
+      }
     } catch (e) {
-      print('Error retrieving top tracks: $e');
+      print('❌ Error retrieving top tracks: $e');
       return [];
     }
   }
@@ -365,22 +408,46 @@ class SpotifyService extends GetxService {
     String timeRange = 'medium_term',
     int limit = 20,
   }) async {
-    if (!isConnected) return [];
+    if (!isConnected) {
+      print('❌ Not connected to Spotify');
+      return [];
+    }
 
     try {
-      // Data simulation
-      await Future.delayed(const Duration(seconds: 1));
+      print('🎵 Fetching top artists from Spotify API...');
       
-      return List.generate(limit, (index) => {
-        'id': 'artist_$index',
-        'name': 'Artist ${index + 1}',
-        'genres': ['pop', 'rock'][index % 2],
-        'followers': {'total': 1000000 - (index * 10000)},
-        'images': [],
-        'popularity': 95 - index,
-      });
+      final response = await http.get(
+        Uri.parse('https://api.spotify.com/v1/me/top/artists?time_range=$timeRange&limit=$limit'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      print('📡 Top artists API response: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List<dynamic> artists = data['items'] ?? [];
+        
+        print('✅ Retrieved ${artists.length} top artists');
+        
+        return artists.cast<Map<String, dynamic>>();
+      } else if (response.statusCode == 401) {
+        print('🔑 Token expired, attempting refresh...');
+        final refreshed = await refreshAccessToken();
+        if (refreshed) {
+          // Retry the request with new token
+          return await getTopArtists(timeRange: timeRange, limit: limit);
+        }
+        return [];
+      } else {
+        print('❌ Failed to fetch top artists: ${response.statusCode}');
+        print('Response: ${response.body}');
+        return [];
+      }
     } catch (e) {
-      print('Error retrieving top artists: $e');
+      print('❌ Error retrieving top artists: $e');
       return [];
     }
   }
@@ -438,6 +505,291 @@ class SpotifyService extends GetxService {
       print('Error retrieving statistics: $e');
       return null;
     }
+  }
+
+  // Get followed artists
+  Future<List<Map<String, dynamic>>> getFollowedArtists({
+    int limit = 20,
+  }) async {
+    if (!isConnected) {
+      print('❌ Not connected to Spotify');
+      return [];
+    }
+
+    try {
+      print('👥 Fetching followed artists from Spotify API...');
+      
+      final response = await http.get(
+        Uri.parse('https://api.spotify.com/v1/me/following?type=artist&limit=$limit'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      print('📡 Followed artists API response: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List<dynamic> artists = data['artists']?['items'] ?? [];
+        
+        print('✅ Retrieved ${artists.length} followed artists');
+        
+        return artists.cast<Map<String, dynamic>>();
+      } else if (response.statusCode == 401) {
+        print('🔑 Token expired, attempting refresh...');
+        final refreshed = await refreshAccessToken();
+        if (refreshed) {
+          // Retry the request with new token
+          return await getFollowedArtists(limit: limit);
+        }
+        return [];
+      } else {
+        print('❌ Failed to fetch followed artists: ${response.statusCode}');
+        print('Response: ${response.body}');
+        return [];
+      }
+    } catch (e) {
+      print('❌ Error retrieving followed artists: $e');
+      return [];
+    }
+  }
+
+  // Get user's saved albums
+  Future<List<Map<String, dynamic>>> getSavedAlbums({
+    int limit = 20,
+  }) async {
+    if (!isConnected) {
+      print('❌ Not connected to Spotify');
+      return [];
+    }
+
+    try {
+      print('💿 Fetching saved albums from Spotify API...');
+      
+      final response = await http.get(
+        Uri.parse('https://api.spotify.com/v1/me/albums?limit=$limit'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      print('📡 Saved albums API response: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List<dynamic> albums = data['items'] ?? [];
+        
+        // Extract album data from the nested structure
+        final albumList = albums.map((item) => item['album'] as Map<String, dynamic>).toList();
+        
+        print('✅ Retrieved ${albumList.length} saved albums');
+        
+        return albumList.cast<Map<String, dynamic>>();
+      } else if (response.statusCode == 401) {
+        print('🔑 Token expired, attempting refresh...');
+        final refreshed = await refreshAccessToken();
+        if (refreshed) {
+          // Retry the request with new token
+          return await getSavedAlbums(limit: limit);
+        }
+        return [];
+      } else {
+        print('❌ Failed to fetch saved albums: ${response.statusCode}');
+        print('Response: ${response.body}');
+        return [];
+      }
+    } catch (e) {
+      print('❌ Error retrieving saved albums: $e');
+      return [];
+    }
+  }
+
+  // Get user's saved tracks
+  Future<List<Map<String, dynamic>>> getSavedTracks({
+    int limit = 20,
+  }) async {
+    if (!isConnected) {
+      print('❌ Not connected to Spotify');
+      return [];
+    }
+
+    try {
+      print('🎵 Fetching saved tracks from Spotify API...');
+      
+      final response = await http.get(
+        Uri.parse('https://api.spotify.com/v1/me/tracks?limit=$limit'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      print('📡 Saved tracks API response: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List<dynamic> tracks = data['items'] ?? [];
+        
+        // Extract track data from the nested structure
+        final trackList = tracks.map((item) => item['track'] as Map<String, dynamic>).toList();
+        
+        print('✅ Retrieved ${trackList.length} saved tracks');
+        
+        return trackList.cast<Map<String, dynamic>>();
+      } else if (response.statusCode == 401) {
+        print('🔑 Token expired, attempting refresh...');
+        final refreshed = await refreshAccessToken();
+        if (refreshed) {
+          // Retry the request with new token
+          return await getSavedTracks(limit: limit);
+        }
+        return [];
+      } else {
+        print('❌ Failed to fetch saved tracks: ${response.statusCode}');
+        print('Response: ${response.body}');
+        return [];
+      }
+    } catch (e) {
+      print('❌ Error retrieving saved tracks: $e');
+      return [];
+    }
+  }
+
+  // Get all user's artists (top artists + followed artists)
+  Future<Map<String, List<Map<String, dynamic>>>> getAllUserArtists({
+    String timeRange = 'medium_term',
+    int limit = 20,
+  }) async {
+    if (!isConnected) {
+      print('❌ Not connected to Spotify');
+      return {'topArtists': [], 'followedArtists': []};
+    }
+
+    try {
+      print('🎵 Fetching all user artists...');
+      
+      // Fetch both top artists and followed artists in parallel
+      final results = await Future.wait([
+        getTopArtists(timeRange: timeRange, limit: limit),
+        getFollowedArtists(limit: limit),
+      ]);
+
+      final topArtists = results[0];
+      final followedArtists = results[1];
+
+      print('✅ Retrieved ${topArtists.length} top artists and ${followedArtists.length} followed artists');
+
+      return {
+        'topArtists': topArtists,
+        'followedArtists': followedArtists,
+      };
+    } catch (e) {
+      print('❌ Error retrieving all user artists: $e');
+      return {'topArtists': [], 'followedArtists': []};
+    }
+  }
+
+  // Load all user data automatically after authentication
+  Future<Map<String, dynamic>> loadAllUserData({
+    String timeRange = 'medium_term',
+    int limit = 20,
+  }) async {
+    if (!isConnected) {
+      print('❌ Not connected to Spotify');
+      return {};
+    }
+
+    try {
+      print('🎵 Loading all user data from Spotify...');
+      
+      // Load all data in parallel for better performance
+      final results = await Future.wait([
+        getUserProfile(),
+        getTopArtists(timeRange: timeRange, limit: limit),
+        getTopTracks(timeRange: timeRange, limit: limit),
+        getFollowedArtists(limit: limit),
+        getSavedAlbums(limit: limit),
+        getSavedTracks(limit: limit),
+        getRecentlyPlayed(limit: limit),
+        getListeningStats(),
+      ]);
+
+      final userProfile = results[0];
+      final topArtists = results[1] as List<Map<String, dynamic>>;
+      final topTracks = results[2] as List<Map<String, dynamic>>;
+      final followedArtists = results[3] as List<Map<String, dynamic>>;
+      final savedAlbums = results[4] as List<Map<String, dynamic>>;
+      final savedTracks = results[5] as List<Map<String, dynamic>>;
+      final recentlyPlayed = results[6] as List<Map<String, dynamic>>;
+      final listeningStats = results[7];
+
+      print('✅ Successfully loaded all user data:');
+      print('   - User profile: ${userProfile != null ? "✅" : "❌"}');
+      print('   - Top artists: ${topArtists.length}');
+      print('   - Top tracks: ${topTracks.length}');
+      print('   - Followed artists: ${followedArtists.length}');
+      print('   - Saved albums: ${savedAlbums.length}');
+      print('   - Saved tracks: ${savedTracks.length}');
+      print('   - Recently played: ${recentlyPlayed.length}');
+      print('   - Listening stats: ${listeningStats != null ? "✅" : "❌"}');
+
+      // Save data to local storage
+      await _saveUserDataToStorage({
+        'userProfile': userProfile,
+        'topArtists': topArtists,
+        'topTracks': topTracks,
+        'followedArtists': followedArtists,
+        'savedAlbums': savedAlbums,
+        'savedTracks': savedTracks,
+        'recentlyPlayed': recentlyPlayed,
+        'listeningStats': listeningStats,
+        'lastUpdated': DateTime.now().toIso8601String(),
+      });
+
+      return {
+        'userProfile': userProfile,
+        'topArtists': topArtists,
+        'topTracks': topTracks,
+        'followedArtists': followedArtists,
+        'savedAlbums': savedAlbums,
+        'savedTracks': savedTracks,
+        'recentlyPlayed': recentlyPlayed,
+        'listeningStats': listeningStats,
+        'lastUpdated': DateTime.now().toIso8601String(),
+      };
+    } catch (e) {
+      print('❌ Error loading all user data: $e');
+      return {};
+    }
+  }
+
+  // Save user data to local storage
+  Future<void> _saveUserDataToStorage(Map<String, dynamic> userData) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_data', json.encode(userData));
+      print('💾 User data saved to local storage');
+    } catch (e) {
+      print('❌ Error saving user data to storage: $e');
+    }
+  }
+
+  // Load user data from local storage
+  Future<Map<String, dynamic>> loadUserDataFromStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userDataString = prefs.getString('user_data');
+      if (userDataString != null) {
+        final userData = json.decode(userDataString) as Map<String, dynamic>;
+        print('📱 User data loaded from local storage');
+        return userData;
+      }
+    } catch (e) {
+      print('❌ Error loading user data from storage: $e');
+    }
+    return {};
   }
 
 

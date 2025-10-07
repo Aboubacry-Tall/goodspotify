@@ -170,6 +170,55 @@ class AuthPage extends StatelessWidget {
           ),
         const SizedBox(height: 24),
 
+        // User Data Summary
+        if (authController.userData.value != null)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  'Your Spotify Data',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildDataItem('Artists', authController.topArtists.length.toString()),
+                    _buildDataItem('Tracks', authController.topTracks.length.toString()),
+                    _buildDataItem('Albums', authController.savedAlbums.length.toString()),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        const SizedBox(height: 12),
+
+        // Refresh Data Button
+        ElevatedButton(
+          onPressed: authController.loadAllUserData,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: const Text(
+            '🔄 Refresh Data',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ),
+        const SizedBox(height: 12),
+
         // Disconnect Button
         ElevatedButton(
           onPressed: authController.disconnect,
@@ -284,13 +333,28 @@ class AuthPage extends StatelessWidget {
   }
 
   Widget _buildFeaturesList(BuildContext context) {
-    final features = [
-      {'icon': Icons.trending_up, 'title': 'Top Tracks & Artists', 'description': 'Discover your most played content'},
-      {'icon': Icons.analytics, 'title': 'Listening Statistics', 'description': 'Detailed insights about your music habits'},
-      {'icon': Icons.history, 'title': 'Recently Played', 'description': 'Track your recent listening history'},
-      {'icon': Icons.person, 'title': 'Personalized Data', 'description': 'Access your unique Spotify profile'},
-    ];
+    return const SizedBox();
+  }
 
-    return SizedBox();
+  Widget _buildDataItem(String label, String count) {
+    return Column(
+      children: [
+        Text(
+          count,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
   }
 }

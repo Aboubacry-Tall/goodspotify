@@ -1,36 +1,55 @@
 import 'package:get/get.dart';
+import 'package:flutter/material.dart';
+import 'auth_controller.dart';
 
 class HomeController extends GetxController {
   // Observable variables for Home page
   var isLoading = false.obs;
   var recentTracks = <Map<String, dynamic>>[].obs;
   var recommendations = <Map<String, dynamic>>[].obs;
+  
+  late AuthController _authController;
 
   @override
   void onInit() {
     super.onInit();
+    _authController = Get.find<AuthController>();
     loadHomeData();
   }
 
-  // Load home page data
+  // Load home page data from Spotify
   Future<void> loadHomeData() async {
     try {
       isLoading.value = true;
       
-      // Data loading simulation
-      await Future.delayed(const Duration(seconds: 2));
+      if (!_authController.isAuthenticated.value) {
+        print('❌ User not authenticated');
+        recentTracks.clear();
+        recommendations.clear();
+        return;
+      }
+
+      print('🏠 Loading home page data...');
       
-      // Here you will integrate the Spotify API
-      recentTracks.value = [
-        {'title': 'Track 1', 'artist': 'Artist 1', 'album': 'Album 1'},
-        {'title': 'Track 2', 'artist': 'Artist 2', 'album': 'Album 2'},
-      ];
+      // Get recently played tracks
+      recentTracks.value = _authController.recentlyPlayed.take(10).toList();
       
-      recommendations.value = [
-        {'title': 'Recommended 1', 'artist': 'Artist A', 'album': 'Album A'},
-        {'title': 'Recommended 2', 'artist': 'Artist B', 'album': 'Album B'},
-      ];
+      // Get top tracks as recommendations (first 10)
+      recommendations.value = _authController.topTracks.take(10).toList();
       
+      print('✅ Home data loaded:');
+      print('   - Recent tracks: ${recentTracks.length}');
+      print('   - Recommendations: ${recommendations.length}');
+      
+    } catch (e) {
+      print('❌ Error loading home data: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to load home data from Spotify',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     } finally {
       isLoading.value = false;
     }
