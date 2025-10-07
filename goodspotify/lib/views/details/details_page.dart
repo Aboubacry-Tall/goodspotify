@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'dart:ui';
 import '../../controllers/details_controller.dart';
 
 class DetailsPage extends StatelessWidget {
@@ -28,461 +29,878 @@ class DetailsPage extends StatelessWidget {
     });
 
     return Scaffold(
+      backgroundColor: const Color(0xFF121212),
       body: Obx(() {
         if (controller.isLoading.value) {
-          return const Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1DB954)),
+          return Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF1DB954), Color(0xFF121212)],
+              ),
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
             ),
           );
         }
 
         if (controller.itemData.value == null) {
-          return const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  size: 64,
-                  color: Colors.grey,
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'Unable to load details',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.grey,
-                    fontWeight: FontWeight.w500,
+          return Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF1DB954), Color(0xFF121212)],
+              ),
+            ),
+            child: const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: Colors.white70,
                   ),
-                ),
-              ],
+                  SizedBox(height: 16),
+                  Text(
+                    'Unable to load details',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         }
 
         final data = controller.itemData.value!;
         
-        return CustomScrollView(
-          slivers: [
-            _buildSliverAppBar(data, controller),
-            SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildMainInfo(context, data, controller),
-                  const SizedBox(height: 24),
-                  _buildRelatedSection(context, controller),
-                  const SizedBox(height: 100), // Bottom padding
-                ],
-              ),
-            ),
-          ],
-        );
+        return _buildDetailsView(context, data, controller);
       }),
     );
   }
 
-  Widget _buildSliverAppBar(Map<String, dynamic> data, DetailsController controller) {
-    String title = '';
-    String? imageUrl;
-    
+  Widget _buildDetailsView(BuildContext context, Map<String, dynamic> data, DetailsController controller) {
     switch (itemType) {
-      case 'track':
-        title = data['name'] ?? 'Unknown Track';
-        imageUrl = data['album']?['images']?.isNotEmpty == true
-            ? data['album']['images'][0]['url']
-            : null;
-        break;
       case 'artist':
-        title = data['name'] ?? 'Unknown Artist';
-        imageUrl = data['images']?.isNotEmpty == true
-            ? data['images'][0]['url']
-            : null;
-        break;
+        return _buildArtistDetailsView(context, data, controller);
+      case 'track':
+        return _buildTrackDetailsView(context, data, controller);
       case 'album':
-        title = data['name'] ?? 'Unknown Album';
-        imageUrl = data['images']?.isNotEmpty == true
-            ? data['images'][0]['url']
-            : null;
-        break;
+        return _buildAlbumDetailsView(context, data, controller);
+      default:
+        return _buildArtistDetailsView(context, data, controller);
     }
+  }
 
-    return SliverAppBar(
-      expandedHeight: 300,
-      pinned: true,
-      backgroundColor: const Color(0xFF1DB954),
-      flexibleSpace: FlexibleSpaceBar(
-        title: Text(
-          title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        background: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (imageUrl != null)
-              Image.network(
-                imageUrl,
-                fit: BoxFit.cover,
-              )
-            else
-              Container(
-                color: const Color(0xFF1DB954),
-                child: const Center(
-                  child: Icon(
-                    Icons.music_note,
-                    size: 100,
-                    color: Colors.white,
+  Widget _buildArtistDetailsView(BuildContext context, Map<String, dynamic> data, DetailsController controller) {
+    final imageUrl = data['images']?.isNotEmpty == true ? data['images'][0]['url'] : null;
+    final name = data['name'] ?? 'Unknown Artist';
+    final followers = data['followers']?['total'] ?? 0;
+    final popularity = data['popularity'] ?? 0;
+    final genres = data['genres'] as List<dynamic>? ?? [];
+
+    return CustomScrollView(
+      slivers: [
+        SliverAppBar(
+          expandedHeight: 450,
+          pinned: true,
+          backgroundColor: Colors.transparent,
+          flexibleSpace: FlexibleSpaceBar(
+            background: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (imageUrl != null)
+                  Image.network(
+                    imageUrl,
+                    fit: BoxFit.cover,
+                  )
+                else
+                  Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF1DB954), Color(0xFF121212)],
+                      ),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.person,
+                        size: 120,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ),
+                Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black54,
+                        Color(0xFF121212),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.3),
-                    Colors.black.withOpacity(0.7),
-                  ],
+                Positioned(
+                  bottom: 20,
+                  left: 20,
+                  right: 20,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontSize: 48,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
+            ),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.keyboard_arrow_left, color: Colors.white, size: 30),
+              onPressed: () => Get.back(),
+            ),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.play_circle_filled, color: Colors.white, size: 30),
+              onPressed: () {
+                // Play functionality
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.share, color: Colors.white, size: 24),
+              onPressed: () {
+                // Share functionality
+              },
             ),
           ],
+          leading: const SizedBox.shrink(),
         ),
+        SliverToBoxAdapter(
+          child: Container(
+            color: const Color(0xFF121212),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Info and Stats tabs
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Info',
+                        style: TextStyle(
+                          color: Color(0xFF1DB954),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(width: 40),
+                      Text(
+                        'Stats',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Stats section
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard(
+                          value: '${(popularity / 10).toStringAsFixed(1)}',
+                          label: '0-10 popularity',
+                          color: const Color(0xFF1DB954),
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: _buildStatCard(
+                          value: _formatFollowers(followers),
+                          label: 'followers',
+                          color: const Color(0xFF1DB954),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 30),
+                // Genres section
+                if (genres.isNotEmpty) ...[
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                      'Genres',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: genres.take(6).map((genre) => Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF282828),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          genre,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      )).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                ],
+                // Top tracks section
+                _buildTopTracksSection(controller),
+                const SizedBox(height: 100),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatCard({required String value, required String label, required Color color}) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF282828),
+        borderRadius: BorderRadius.circular(12),
       ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.share, color: Colors.white),
-          onPressed: () {
-            // Share functionality
-            print('Share $itemType: $title');
-          },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.white70,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopTracksSection(DetailsController controller) {
+    if (controller.relatedItems.isEmpty) {
+      return const SizedBox();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text(
+            'Your top tracks by ${controller.itemData.value?['name'] ?? 'this artist'}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
-        IconButton(
-          icon: const Icon(Icons.favorite_border, color: Colors.white),
-          onPressed: () {
-            // Add to favorites
-            print('Add to favorites: $title');
+        const SizedBox(height: 20),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          itemCount: controller.relatedItems.length.clamp(0, 10),
+          itemBuilder: (context, index) {
+            final track = controller.relatedItems[index];
+            final artists = track['artists'] as List<dynamic>? ?? [];
+            final album = track['album'] as Map<String, dynamic>? ?? {};
+            final albumImages = album['images'] as List<dynamic>? ?? [];
+            final duration = track['duration_ms'] as int? ?? 0;
+            
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF282828),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  // Track number
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF1DB954),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${index + 1}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Track image and info
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      width: 60,
+                      height: 60,
+                      color: const Color(0xFF1DB954),
+                      child: albumImages.isNotEmpty
+                          ? Image.network(
+                              albumImages[0]['url'],
+                              fit: BoxFit.cover,
+                            )
+                          : const Icon(
+                              Icons.music_note,
+                              color: Colors.white,
+                              size: 30,
+                            ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Track details
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          track['name'] ?? 'Unknown Track',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${_formatDuration(duration)} • ${(track['popularity'] ?? 0)} streams • ${artists.isNotEmpty ? artists[0]['name'] : 'Unknown Artist'}',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Play button
+                  IconButton(
+                    icon: const Icon(
+                      Icons.play_arrow,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    onPressed: () {
+                      // Play track
+                    },
+                  ),
+                ],
+              ),
+            );
           },
         ),
       ],
     );
   }
 
-  Widget _buildMainInfo(BuildContext context, Map<String, dynamic> data, DetailsController controller) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildBasicInfo(context, data, controller),
-          const SizedBox(height: 16),
-          _buildStats(data, controller),
-          const SizedBox(height: 16),
-          _buildDescription(context, data, controller),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBasicInfo(BuildContext context, Map<String, dynamic> data, DetailsController controller) {
-    switch (itemType) {
-      case 'track':
-        return _buildTrackInfo(context, data);
-      case 'artist':
-        return _buildArtistInfo(context, data, controller);
-      case 'album':
-        return _buildAlbumInfo(context, data);
-      default:
-        return const SizedBox();
-    }
-  }
-
-  Widget _buildTrackInfo(BuildContext context, Map<String, dynamic> data) {
+  Widget _buildTrackDetailsView(BuildContext context, Map<String, dynamic> data, DetailsController controller) {
+    final imageUrl = data['album']?['images']?.isNotEmpty == true ? data['album']['images'][0]['url'] : null;
+    final name = data['name'] ?? 'Unknown Track';
     final artists = data['artists'] as List<dynamic>? ?? [];
     final album = data['album'] as Map<String, dynamic>? ?? {};
     final duration = data['duration_ms'] as int? ?? 0;
     final popularity = data['popularity'] as int? ?? 0;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Track Information',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
+    return CustomScrollView(
+      slivers: [
+        SliverAppBar(
+          expandedHeight: 400,
+          pinned: true,
+          backgroundColor: Colors.transparent,
+          flexibleSpace: FlexibleSpaceBar(
+            background: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (imageUrl != null)
+                  Image.network(
+                    imageUrl,
+                    fit: BoxFit.cover,
+                  )
+                else
+                  Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF1DB954), Color(0xFF121212)],
+                      ),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.music_note,
+                        size: 120,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ),
+                Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black54,
+                        Color(0xFF121212),
+                      ],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 20,
+                  left: 20,
+                  right: 20,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        artists.map((a) => a['name']).join(', '),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.keyboard_arrow_left, color: Colors.white, size: 30),
+              onPressed: () => Get.back(),
+            ),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.play_circle_filled, color: Colors.white, size: 30),
+              onPressed: () {
+                // Play functionality
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.share, color: Colors.white, size: 24),
+              onPressed: () {
+                // Share functionality
+              },
+            ),
+          ],
+          leading: const SizedBox.shrink(),
+        ),
+        SliverToBoxAdapter(
+          child: Container(
+            color: const Color(0xFF121212),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard(
+                          value: _formatDuration(duration),
+                          label: 'duration',
+                          color: const Color(0xFF1DB954),
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: _buildStatCard(
+                          value: '$popularity%',
+                          label: 'popularity',
+                          color: const Color(0xFF1DB954),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Album',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        album['name'] ?? 'Unknown Album',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 16,
+                        ),
+                      ),
+                      if (album['release_date'] != null) ...[
+                        const SizedBox(height: 20),
+                        const Text(
+                          'Release Date',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          album['release_date'],
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 100),
+              ],
+            ),
           ),
         ),
-        const SizedBox(height: 12),
-        _buildInfoRow('Artists', artists.map((a) => a['name']).join(', ')),
-        _buildInfoRow('Album', album['name'] ?? 'Unknown'),
-        _buildInfoRow('Duration', _formatDuration(duration)),
-        _buildInfoRow('Popularity', '$popularity%'),
-        if (album['release_date'] != null)
-          _buildInfoRow('Release Date', album['release_date']),
       ],
     );
   }
 
-  Widget _buildArtistInfo(BuildContext context, Map<String, dynamic> data, DetailsController controller) {
-    final followers = data['followers']?['total'] ?? 0;
-    final genres = data['genres'] as List<dynamic>? ?? [];
-    final popularity = data['popularity'] as int? ?? 0;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Artist Information',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 12),
-        _buildInfoRow('Followers', _formatFollowers(followers)),
-        _buildInfoRow('Popularity', '$popularity%'),
-        if (genres.isNotEmpty)
-          _buildInfoRow('Genres', genres.take(3).join(', ')),
-      ],
-    );
-  }
-
-  Widget _buildAlbumInfo(BuildContext context, Map<String, dynamic> data) {
+  Widget _buildAlbumDetailsView(BuildContext context, Map<String, dynamic> data, DetailsController controller) {
+    final imageUrl = data['images']?.isNotEmpty == true ? data['images'][0]['url'] : null;
+    final name = data['name'] ?? 'Unknown Album';
     final artists = data['artists'] as List<dynamic>? ?? [];
     final totalTracks = data['total_tracks'] as int? ?? 0;
     final popularity = data['popularity'] as int? ?? 0;
+    final releaseDate = data['release_date'] ?? 'Unknown';
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Album Information',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
+    return CustomScrollView(
+      slivers: [
+        SliverAppBar(
+          expandedHeight: 400,
+          pinned: true,
+          backgroundColor: Colors.transparent,
+          flexibleSpace: FlexibleSpaceBar(
+            background: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (imageUrl != null)
+                  Image.network(
+                    imageUrl,
+                    fit: BoxFit.cover,
+                  )
+                else
+                  Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF1DB954), Color(0xFF121212)],
+                      ),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.album,
+                        size: 120,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ),
+                Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black54,
+                        Color(0xFF121212),
+                      ],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 20,
+                  left: 20,
+                  right: 20,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        artists.map((a) => a['name']).join(', '),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.keyboard_arrow_left, color: Colors.white, size: 30),
+              onPressed: () => Get.back(),
+            ),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.play_circle_filled, color: Colors.white, size: 30),
+              onPressed: () {
+                // Play functionality
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.share, color: Colors.white, size: 24),
+              onPressed: () {
+                // Share functionality
+              },
+            ),
+          ],
+          leading: const SizedBox.shrink(),
+        ),
+        SliverToBoxAdapter(
+          child: Container(
+            color: const Color(0xFF121212),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard(
+                          value: totalTracks.toString(),
+                          label: 'tracks',
+                          color: const Color(0xFF1DB954),
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: _buildStatCard(
+                          value: '$popularity%',
+                          label: 'popularity',
+                          color: const Color(0xFF1DB954),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Release Date',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        releaseDate,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 30),
+                _buildAlbumTracksSection(controller),
+                const SizedBox(height: 100),
+              ],
+            ),
           ),
         ),
-        const SizedBox(height: 12),
-        _buildInfoRow('Artists', artists.map((a) => a['name']).join(', ')),
-        _buildInfoRow('Total Tracks', totalTracks.toString()),
-        _buildInfoRow('Popularity', '$popularity%'),
-        if (data['release_date'] != null)
-          _buildInfoRow('Release Date', data['release_date']),
       ],
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              '$label:',
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-                color: Colors.grey,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontWeight: FontWeight.w400),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStats(Map<String, dynamic> data, DetailsController controller) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildStatItem('Popularity', '${data['popularity'] ?? 0}%'),
-        if (itemType == 'artist')
-          _buildStatItem('Followers', _formatFollowers(data['followers']?['total'] ?? 0)),
-        if (itemType == 'track')
-          _buildStatItem('Duration', _formatDuration(data['duration_ms'] ?? 0)),
-          if (itemType == 'album')
-            _buildStatItem('Tracks', '${data['total_tracks'] ?? 0}'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem(String label, String value) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1DB954),
-          ),
-        ),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.grey,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDescription(BuildContext context, Map<String, dynamic> data, DetailsController controller) {
-    if (itemType == 'artist' && data['genres'] != null) {
-      final genres = data['genres'] as List<dynamic>;
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Genres',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            children: genres.map((genre) => Chip(
-              label: Text(genre),
-              backgroundColor: const Color(0xFF1DB954).withOpacity(0.1),
-              labelStyle: const TextStyle(color: Color(0xFF1DB954)),
-            )).toList(),
-          ),
-        ],
-      );
-    }
-    return const SizedBox();
-  }
-
-  Widget _buildRelatedSection(BuildContext context, DetailsController controller) {
+  Widget _buildAlbumTracksSection(DetailsController controller) {
     if (controller.relatedItems.isEmpty) {
       return const SizedBox();
     }
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            _getRelatedSectionTitle(),
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20),
+          child: Text(
+            'Tracks',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 16),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: controller.relatedItems.length,
-            itemBuilder: (context, index) {
-              final item = controller.relatedItems[index];
-              return _buildRelatedItem(item);
-            },
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 20),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          itemCount: controller.relatedItems.length,
+          itemBuilder: (context, index) {
+            final track = controller.relatedItems[index];
+            final duration = track['duration_ms'] as int? ?? 0;
+            
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF282828),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    '${index + 1}',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Text(
+                      track['name'] ?? 'Unknown Track',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Text(
+                    _formatDuration(duration),
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.play_arrow,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    onPressed: () {
+                      // Play track
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 
-  String _getRelatedSectionTitle() {
-    switch (itemType) {
-      case 'track':
-        return 'More from this artist';
-      case 'artist':
-        return 'Top tracks & albums';
-      case 'album':
-        return 'Album tracks';
-      default:
-        return 'Related items';
-    }
-  }
-
-  Widget _buildRelatedItem(Map<String, dynamic> item) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: const Color(0xFF1DB954),
-          backgroundImage: _getItemImage(item) != null
-              ? NetworkImage(_getItemImage(item)!)
-              : null,
-          child: _getItemImage(item) == null
-              ? const Icon(Icons.music_note, color: Colors.white)
-              : null,
-        ),
-        title: Text(
-          item['name'] ?? 'Unknown',
-          style: const TextStyle(fontWeight: FontWeight.w500),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          _getItemSubtitle(item),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        trailing: const Icon(Icons.play_circle_outline, color: Color(0xFF1DB954)),
-        onTap: () {
-          // Navigate to item details
-          String itemType = 'track'; // Default
-          if (item['artists'] != null) {
-            itemType = 'track';
-          } else if (item['total_tracks'] != null) {
-            itemType = 'album';
-          }
-          
-          Get.to(() => DetailsPage(
-            itemId: item['id'] ?? '',
-            itemType: itemType,
-            itemData: item,
-          ));
-        },
-      ),
-    );
-  }
-
-  String? _getItemImage(Map<String, dynamic> item) {
-    if (item['images'] != null && (item['images'] as List).isNotEmpty) {
-      return item['images'][0]['url'];
-    }
-    if (item['album']?['images'] != null && (item['album']['images'] as List).isNotEmpty) {
-      return item['album']['images'][0]['url'];
-    }
-    return null;
-  }
-
-  String _getItemSubtitle(Map<String, dynamic> item) {
-    if (item['artists'] != null) {
-      return (item['artists'] as List).map((a) => a['name']).join(', ');
-    }
-    if (item['album'] != null) {
-      return item['album']['name'];
-    }
-    return '';
-  }
-
-  // Format duration
+  // Helper methods
   String _formatDuration(int milliseconds) {
     final duration = Duration(milliseconds: milliseconds);
     final minutes = duration.inMinutes;
@@ -490,7 +908,6 @@ class DetailsPage extends StatelessWidget {
     return '${minutes}:${seconds.toString().padLeft(2, '0')}';
   }
 
-  // Format followers
   String _formatFollowers(int followers) {
     if (followers >= 1000000) {
       return '${(followers / 1000000).toStringAsFixed(1)}M';

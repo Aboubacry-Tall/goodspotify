@@ -13,8 +13,21 @@ class HomeController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _authController = Get.find<AuthController>();
-    loadHomeData();
+    try {
+      _authController = Get.find<AuthController>();
+      loadHomeData();
+    } catch (e) {
+      print('❌ Error initializing HomeController: $e');
+      // Retry finding AuthController after a delay
+      Future.delayed(const Duration(milliseconds: 100), () {
+        try {
+          _authController = Get.find<AuthController>();
+          loadHomeData();
+        } catch (e) {
+          print('❌ AuthController still not available: $e');
+        }
+      });
+    }
   }
 
   // Load home page data from Spotify

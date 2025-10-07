@@ -12,11 +12,18 @@ class SettingsPage extends StatelessWidget {
     final AuthController authController = Get.find();
 
     return Scaffold(
+      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
         title: const Text('Settings'),
-        backgroundColor: const Color(0xFF1DB954),
+        backgroundColor: const Color(0xFF121212),
         foregroundColor: Colors.white,
         elevation: 0,
+        centerTitle: false,
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 32,
+          fontWeight: FontWeight.bold,
+        ),
       ),
       body: Obx(() {
         return ListView(
@@ -24,7 +31,11 @@ class SettingsPage extends StatelessWidget {
           children: [
             // Account Section
             _buildSectionHeader('Account'),
-            Card(
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF282828),
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Column(
                 children: [
                   ListTile(
@@ -33,15 +44,21 @@ class SettingsPage extends StatelessWidget {
                           ? Icons.check_circle
                           : Icons.music_note,
                       color: authController.isAuthenticated.value
-                          ? Colors.green
+                          ? const Color(0xFF1DB954)
                           : const Color(0xFF1DB954),
                     ),
-                    title: Text(authController.isAuthenticated.value
-                        ? 'Connected to Spotify'
-                        : 'Connect to Spotify'),
-                    subtitle: Text(authController.isAuthenticated.value
-                        ? 'Your data is synchronized'
-                        : 'Connect to access your data'),
+                    title: Text(
+                      authController.isAuthenticated.value
+                          ? 'Connected to Spotify'
+                          : 'Connect to Spotify',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    subtitle: Text(
+                      authController.isAuthenticated.value
+                          ? 'Your data is synchronized'
+                          : 'Connect to access your data',
+                      style: const TextStyle(color: Colors.white70),
+                    ),
                     trailing: ElevatedButton(
                       onPressed: controller.toggleSpotifyConnection,
                       style: ElevatedButton.styleFrom(
@@ -63,12 +80,16 @@ class SettingsPage extends StatelessWidget {
 
             // Appearance Section
             _buildSectionHeader('Appearance'),
-            Card(
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF282828),
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Column(
                 children: [
                   SwitchListTile(
-                    title: const Text('Dark Mode'),
-                    subtitle: const Text('Enable dark theme'),
+                    title: const Text('Dark Mode', style: TextStyle(color: Colors.white)),
+                    subtitle: const Text('Enable dark theme', style: TextStyle(color: Colors.white70)),
                     value: controller.isDarkMode.value,
                     onChanged: (_) => controller.toggleDarkMode(),
                     activeColor: const Color(0xFF1DB954),
@@ -76,9 +97,12 @@ class SettingsPage extends StatelessWidget {
                   ),
                   const Divider(height: 1),
                   ListTile(
-                    leading: const Icon(Icons.language),
-                    title: const Text('Language'),
-                    subtitle: Text(_getLanguageName(controller.selectedLanguage.value)),
+                    leading: const Icon(Icons.language, color: Colors.white70),
+                    title: const Text('Language', style: TextStyle(color: Colors.white)),
+                    subtitle: Text(
+                      _getLanguageName(controller.selectedLanguage.value),
+                      style: const TextStyle(color: Colors.white70),
+                    ),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => _showLanguageDialog(context, controller),
                   ),
@@ -90,7 +114,11 @@ class SettingsPage extends StatelessWidget {
 
             // Audio Section
             _buildSectionHeader('Audio'),
-            Card(
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF282828),
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Column(
                 children: [
                   ListTile(
@@ -132,7 +160,11 @@ class SettingsPage extends StatelessWidget {
 
             // About Section
             _buildSectionHeader('About'),
-            Card(
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF282828),
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Column(
                 children: [
                   const ListTile(
@@ -175,9 +207,9 @@ class SettingsPage extends StatelessWidget {
       child: Text(
         title,
         style: const TextStyle(
-          fontSize: 16,
+          fontSize: 20,
           fontWeight: FontWeight.bold,
-          color: Color(0xFF1DB954),
+          color: Colors.white,
         ),
       ),
     );

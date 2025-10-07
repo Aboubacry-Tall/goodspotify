@@ -71,26 +71,59 @@ class SettingsController extends GetxController {
 
   // Connect/Disconnect Spotify
   Future<void> toggleSpotifyConnection() async {
-    final authController = Get.find<AuthController>();
-    
-    if (authController.isAuthenticated.value) {
-      // Disconnect from Spotify
-      await authController.disconnect();
-    } else {
-      // Connect to Spotify
-      await authController.connectSpotify();
+    try {
+      final authController = Get.find<AuthController>();
+      
+      if (authController.isAuthenticated.value) {
+        // Disconnect from Spotify
+        await authController.disconnect();
+      } else {
+        // Connect to Spotify
+        await authController.connectSpotify();
+      }
+    } catch (e) {
+      print('❌ Error accessing AuthController in toggleSpotifyConnection: $e');
+      Get.snackbar(
+        'Error',
+        'Unable to connect to Spotify service',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     }
   }
 
   // Connect to Spotify
   Future<void> connectSpotify() async {
-    final authController = Get.find<AuthController>();
-    await authController.connectSpotify();
+    try {
+      final authController = Get.find<AuthController>();
+      await authController.connectSpotify();
+    } catch (e) {
+      print('❌ Error accessing AuthController in connectSpotify: $e');
+      Get.snackbar(
+        'Error',
+        'Unable to connect to Spotify service',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
   }
 
   // Disconnect from Spotify
   Future<void> disconnectSpotify() async {
-    final authController = Get.find<AuthController>();
-    await authController.disconnect();
+    try {
+      final authController = Get.find<AuthController>();
+      await authController.disconnect();
+    } catch (e) {
+      print('❌ Error accessing AuthController in disconnectSpotify: $e');
+      Get.snackbar(
+        'Error',
+        'Unable to disconnect from Spotify service',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
   }
 }

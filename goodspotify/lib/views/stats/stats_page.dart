@@ -10,17 +10,33 @@ class StatsPage extends StatelessWidget {
     final StatsController controller = Get.find();
 
     return Scaffold(
+      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
         title: const Text('Statistics'),
-        backgroundColor: const Color(0xFF1DB954),
+        backgroundColor: const Color(0xFF121212),
         foregroundColor: Colors.white,
         elevation: 0,
+        centerTitle: false,
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 32,
+          fontWeight: FontWeight.bold,
+        ),
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
-          return const Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1DB954)),
+          return Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF1DB954), Color(0xFF121212)],
+              ),
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
             ),
           );
         }
@@ -75,7 +91,7 @@ class StatsPage extends StatelessWidget {
                         'Favorite Genres',
                         '${controller.favoriteGenres.length}',
                         Icons.category,
-                        Colors.green,
+                        const Color(0xFF1DB954),
                       ),
                     ),
                   ],
@@ -84,27 +100,25 @@ class StatsPage extends StatelessWidget {
                 const SizedBox(height: 32),
 
                 // Favorite genres chart
-                Text(
-                  'Music Genres',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    'Music Genres',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
 
                 Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: const Color(0xFF282828),
                     borderRadius: BorderRadius.circular(15),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
-                        spreadRadius: 1,
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
                   ),
                   child: Column(
                     children: controller.favoriteGenres.map((genre) {
@@ -113,24 +127,30 @@ class StatsPage extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  genre['genre'],
-                                  style: const TextStyle(fontWeight: FontWeight.w500),
-                                ),
-                                Text('${genre['percentage']}%'),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            LinearProgressIndicator(
-                              value: genre['percentage'] / 100,
-                              backgroundColor: Colors.grey[300],
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Color(genre['color']),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    genre['genre'],
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${genre['percentage']}%',
+                                    style: const TextStyle(color: Colors.white70),
+                                  ),
+                                ],
                               ),
-                            ),
+                              const SizedBox(height: 8),
+                              LinearProgressIndicator(
+                                value: genre['percentage'] / 100,
+                                backgroundColor: Colors.white24,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Color(genre['color']),
+                                ),
+                              ),
                           ],
                         ),
                       );
@@ -141,27 +161,25 @@ class StatsPage extends StatelessWidget {
                 const SizedBox(height: 32),
 
                 // Monthly statistics
-                Text(
-                  'Monthly Listening (hours)',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    'Monthly Listening (hours)',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
 
                 Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: const Color(0xFF282828),
                     borderRadius: BorderRadius.circular(15),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
-                        spreadRadius: 1,
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
                   ),
                   child: Column(
                     children: controller.monthlyStats.map((month) {
@@ -173,20 +191,26 @@ class StatsPage extends StatelessWidget {
                               width: 40,
                               child: Text(
                                 month['month'],
-                                style: const TextStyle(fontWeight: FontWeight.w500),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                             Expanded(
                               child: LinearProgressIndicator(
                                 value: month['hours'] / 70, // Normalized to 70h max
-                                backgroundColor: Colors.grey[300],
+                                backgroundColor: Colors.white24,
                                 valueColor: const AlwaysStoppedAnimation<Color>(
                                   Color(0xFF1DB954),
                                 ),
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Text('${month['hours']}h'),
+                            Text(
+                              '${month['hours']}h',
+                              style: const TextStyle(color: Colors.white70),
+                            ),
                           ],
                         ),
                       );
@@ -205,16 +229,8 @@ class StatsPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF282828),
         borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Column(
         children: [
@@ -229,14 +245,15 @@ class StatsPage extends StatelessWidget {
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             title,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12,
-              color: Colors.grey[600],
+              color: Colors.white70,
             ),
             textAlign: TextAlign.center,
           ),

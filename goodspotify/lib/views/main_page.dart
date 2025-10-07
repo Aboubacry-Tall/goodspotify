@@ -35,8 +35,8 @@ class MainPage extends StatelessWidget {
           currentIndex: navController.selectedIndex.value,
           onTap: navController.changeTabIndex,
           selectedItemColor: const Color(0xFF1DB954), // Spotify green
-          unselectedItemColor: Colors.grey,
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          unselectedItemColor: Colors.white70,
+          backgroundColor: const Color(0xFF282828),
           elevation: 8,
           items: const [
             BottomNavigationBarItem(

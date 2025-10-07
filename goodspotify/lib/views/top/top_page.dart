@@ -11,40 +11,61 @@ class TopPage extends StatelessWidget {
     final TopController controller = Get.find();
 
     return Scaffold(
+      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
-        title: const Text('Top Charts'),
-        backgroundColor: const Color(0xFF1DB954),
+        title: const Text('Top'),
+        backgroundColor: const Color(0xFF121212),
         foregroundColor: Colors.white,
         elevation: 0,
+        centerTitle: false,
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 32,
+          fontWeight: FontWeight.bold,
+        ),
         actions: [
           PopupMenuButton<String>(
             onSelected: controller.changeTimeRange,
+            color: const Color(0xFF282828),
             itemBuilder: (context) => [
               const PopupMenuItem(
-              value: 'short_term',
-              child: Text('Last 4 weeks'),
-            ),
-            const PopupMenuItem(
-              value: 'medium_term',
-              child: Text('Last 6 months'),
-            ),
-            const PopupMenuItem(
-              value: 'long_term',
-              child: Text('All time'),
+                value: 'short_term',
+                child: Text('Last 4 weeks', style: TextStyle(color: Colors.white)),
+              ),
+              const PopupMenuItem(
+                value: 'medium_term',
+                child: Text('Last 6 months', style: TextStyle(color: Colors.white)),
+              ),
+              const PopupMenuItem(
+                value: 'long_term',
+                child: Text('All time', style: TextStyle(color: Colors.white)),
               ),
             ],
             child: Container(
               margin: const EdgeInsets.only(right: 16),
-              child: const Icon(Icons.filter_list),
+              child: const Icon(Icons.filter_list, color: Colors.white),
             ),
           ),
         ],
       ),
       body: Column(
         children: [
-          // Onglets
+          // Time range indicator
           Container(
-            color: const Color(0xFF1DB954),
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            color: const Color(0xFF121212),
+            child: Obx(() => Text(
+              _getTimeRangeText(controller.timeRange.value),
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+              ),
+            )),
+          ),
+          // Tabs
+          Container(
+            color: const Color(0xFF121212),
             child: Row(
               children: [
                 Expanded(
@@ -54,7 +75,7 @@ class TopPage extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       decoration: BoxDecoration(
                         border: controller.selectedTabIndex.value == 0
-                            ? const Border(bottom: BorderSide(color: Colors.white, width: 2))
+                            ? const Border(bottom: BorderSide(color: Color(0xFF1DB954), width: 3))
                             : null,
                       ),
                       child: Text(
@@ -62,11 +83,12 @@ class TopPage extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: controller.selectedTabIndex.value == 0 
-                              ? Colors.white 
+                              ? const Color(0xFF1DB954)
                               : Colors.white70,
                           fontWeight: controller.selectedTabIndex.value == 0 
                               ? FontWeight.bold 
                               : FontWeight.normal,
+                          fontSize: 16,
                         ),
                       ),
                     ),
@@ -79,7 +101,7 @@ class TopPage extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       decoration: BoxDecoration(
                         border: controller.selectedTabIndex.value == 1
-                            ? const Border(bottom: BorderSide(color: Colors.white, width: 2))
+                            ? const Border(bottom: BorderSide(color: Color(0xFF1DB954), width: 3))
                             : null,
                       ),
                       child: Text(
@@ -87,11 +109,12 @@ class TopPage extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: controller.selectedTabIndex.value == 1 
-                              ? Colors.white 
+                              ? const Color(0xFF1DB954)
                               : Colors.white70,
                           fontWeight: controller.selectedTabIndex.value == 1 
                               ? FontWeight.bold 
                               : FontWeight.normal,
+                          fontSize: 16,
                         ),
                       ),
                     ),
@@ -104,7 +127,7 @@ class TopPage extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       decoration: BoxDecoration(
                         border: controller.selectedTabIndex.value == 2
-                            ? const Border(bottom: BorderSide(color: Colors.white, width: 2))
+                            ? const Border(bottom: BorderSide(color: Color(0xFF1DB954), width: 3))
                             : null,
                       ),
                       child: Text(
@@ -112,11 +135,12 @@ class TopPage extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: controller.selectedTabIndex.value == 2 
-                              ? Colors.white 
+                              ? const Color(0xFF1DB954)
                               : Colors.white70,
                           fontWeight: controller.selectedTabIndex.value == 2 
                               ? FontWeight.bold 
                               : FontWeight.normal,
+                          fontSize: 16,
                         ),
                       ),
                     ),
@@ -168,14 +192,14 @@ class TopPage extends StatelessWidget {
             Icon(
               Icons.music_off,
               size: 64,
-              color: Colors.grey,
+              color: Colors.white70,
             ),
             SizedBox(height: 16),
             Text(
               'No tracks found',
               style: TextStyle(
                 fontSize: 18,
-                color: Colors.grey,
+                color: Colors.white70,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -183,7 +207,7 @@ class TopPage extends StatelessWidget {
               'Connect to Spotify to see your top tracks',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey,
+                color: Colors.white70,
               ),
             ),
           ],
@@ -200,8 +224,12 @@ class TopPage extends StatelessWidget {
         final album = track['album'] as Map<String, dynamic>? ?? {};
         final albumImages = album['images'] as List<dynamic>? ?? [];
         
-        return Card(
+        return Container(
           margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF282828),
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: ListTile(
             leading: Stack(
               children: [
@@ -241,7 +269,10 @@ class TopPage extends StatelessWidget {
             ),
             title: Text(
               track['name'] ?? 'Unknown Track',
-              style: const TextStyle(fontWeight: FontWeight.w500),
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -250,12 +281,13 @@ class TopPage extends StatelessWidget {
               children: [
                 Text(
                   artists.map((a) => a['name']).join(', '),
+                  style: const TextStyle(color: Colors.white70),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   album['name'] ?? 'Unknown Album',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  style: const TextStyle(fontSize: 12, color: Colors.white54),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -294,14 +326,14 @@ class TopPage extends StatelessWidget {
             Icon(
               Icons.person_off,
               size: 64,
-              color: Colors.grey,
+              color: Colors.white70,
             ),
             SizedBox(height: 16),
             Text(
               'No artists found',
               style: TextStyle(
                 fontSize: 18,
-                color: Colors.grey,
+                color: Colors.white70,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -309,7 +341,7 @@ class TopPage extends StatelessWidget {
               'Connect to Spotify to see your top artists',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey,
+                color: Colors.white70,
               ),
             ),
           ],
@@ -326,8 +358,12 @@ class TopPage extends StatelessWidget {
         final followers = artist['followers'] as Map<String, dynamic>? ?? {};
         final genres = artist['genres'] as List<dynamic>? ?? [];
         
-        return Card(
+        return Container(
           margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF282828),
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: ListTile(
             leading: Stack(
               children: [
@@ -367,7 +403,10 @@ class TopPage extends StatelessWidget {
             ),
             title: Text(
               artist['name'] ?? 'Unknown Artist',
-              style: const TextStyle(fontWeight: FontWeight.w500),
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -376,13 +415,14 @@ class TopPage extends StatelessWidget {
               children: [
                 Text(
                   '${_formatFollowers(followers['total'] ?? 0)} followers',
+                  style: const TextStyle(color: Colors.white70),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (genres.isNotEmpty)
                   Text(
                     genres.take(2).join(', '),
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: const TextStyle(fontSize: 12, color: Colors.white54),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -421,6 +461,19 @@ class TopPage extends StatelessWidget {
     return followers.toString();
   }
 
+  String _getTimeRangeText(String timeRange) {
+    switch (timeRange) {
+      case 'short_term':
+        return 'past 4 weeks';
+      case 'medium_term':
+        return 'past 6 months';
+      case 'long_term':
+        return 'lifetime';
+      default:
+        return 'past 6 months';
+    }
+  }
+
   Widget _buildAlbumsTab(TopController controller) {
     if (controller.topAlbums.isEmpty) {
       return const Center(
@@ -430,14 +483,14 @@ class TopPage extends StatelessWidget {
             Icon(
               Icons.album_outlined,
               size: 64,
-              color: Colors.grey,
+              color: Colors.white70,
             ),
             SizedBox(height: 16),
             Text(
               'No albums found',
               style: TextStyle(
                 fontSize: 18,
-                color: Colors.grey,
+                color: Colors.white70,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -445,7 +498,7 @@ class TopPage extends StatelessWidget {
               'Save some albums on Spotify to see them here',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey,
+                color: Colors.white70,
               ),
             ),
           ],
@@ -461,8 +514,12 @@ class TopPage extends StatelessWidget {
         final images = album['images'] as List<dynamic>? ?? [];
         final artists = album['artists'] as List<dynamic>? ?? [];
         
-        return Card(
+        return Container(
           margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF282828),
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: ListTile(
             leading: Stack(
               children: [
@@ -502,7 +559,10 @@ class TopPage extends StatelessWidget {
             ),
             title: Text(
               album['name'] ?? 'Unknown Album',
-              style: const TextStyle(fontWeight: FontWeight.w500),
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -511,12 +571,13 @@ class TopPage extends StatelessWidget {
               children: [
                 Text(
                   artists.map((a) => a['name']).join(', '),
+                  style: const TextStyle(color: Colors.white70),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   '${album['total_tracks'] ?? 0} tracks • ${album['release_date'] ?? 'Unknown year'}',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  style: const TextStyle(fontSize: 12, color: Colors.white54),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),

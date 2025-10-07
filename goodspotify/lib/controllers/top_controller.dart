@@ -16,8 +16,21 @@ class TopController extends GetxController with GetSingleTickerProviderStateMixi
   @override
   void onInit() {
     super.onInit();
-    _authController = Get.find<AuthController>();
-    loadTopData();
+    try {
+      _authController = Get.find<AuthController>();
+      loadTopData();
+    } catch (e) {
+      print('❌ Error initializing TopController: $e');
+      // Retry finding AuthController after a delay
+      Future.delayed(const Duration(milliseconds: 100), () {
+        try {
+          _authController = Get.find<AuthController>();
+          loadTopData();
+        } catch (e) {
+          print('❌ AuthController still not available: $e');
+        }
+      });
+    }
   }
 
   // Load top data from Spotify

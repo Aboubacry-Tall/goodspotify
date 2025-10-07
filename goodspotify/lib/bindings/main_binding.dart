@@ -16,7 +16,8 @@ class MainBinding extends Bindings {
     Get.put<FirebaseService>(FirebaseService(), permanent: true);
     
     // Inject all main controllers
-    Get.lazyPut<AuthController>(() => AuthController());
+    // AuthController needs to be eagerly initialized since other controllers depend on it
+    Get.put<AuthController>(AuthController(), permanent: true);
     Get.lazyPut<NavigationController>(() => NavigationController());
     Get.lazyPut<HomeController>(() => HomeController());
     Get.lazyPut<TopController>(() => TopController());
