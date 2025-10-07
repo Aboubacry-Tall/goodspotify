@@ -31,8 +31,9 @@ class HomeController extends GetxController {
 
       print('🏠 Loading home page data...');
       
-      // Get recently played tracks
-      recentTracks.value = _authController.recentlyPlayed.take(10).toList();
+      // Get recently played tracks from Spotify API
+      final recentlyPlayedData = await _authController.getRecentlyPlayed(limit: 10);
+      recentTracks.value = recentlyPlayedData;
       
       // Get top tracks as recommendations (first 10)
       recommendations.value = _authController.topTracks.take(10).toList();

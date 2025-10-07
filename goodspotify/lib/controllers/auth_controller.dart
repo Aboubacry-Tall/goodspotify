@@ -308,6 +308,19 @@ class AuthController extends GetxController {
     }
   }
 
+  // Get recently played tracks
+  Future<List<Map<String, dynamic>>> getRecentlyPlayed({
+    int limit = 20,
+  }) async {
+    try {
+      final spotifyService = Get.find<SpotifyService>();
+      return await spotifyService.getRecentlyPlayed(limit: limit);
+    } catch (e) {
+      print('Error getting recently played tracks: $e');
+      return [];
+    }
+  }
+
   // Get followed artists
   Future<List<Map<String, dynamic>>> getFollowedArtists({
     int limit = 20,

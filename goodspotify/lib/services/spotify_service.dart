@@ -454,55 +454,112 @@ class SpotifyService extends GetxService {
 
   // Get recently played tracks
   Future<List<Map<String, dynamic>>> getRecentlyPlayed({int limit = 20}) async {
-    if (!isConnected) return [];
+    if (!isConnected) {
+      print('❌ Not connected to Spotify');
+      return [];
+    }
 
     try {
-      // Data simulation
-      await Future.delayed(const Duration(seconds: 1));
+      print('⏰ Fetching recently played tracks from Spotify API...');
       
-      return List.generate(limit, (index) => {
-        'track': {
-          'id': 'recent_track_$index',
-          'name': 'Recent Track ${index + 1}',
-          'artists': [{'name': 'Recent Artist ${index + 1}'}],
-          'album': {
-            'name': 'Recent Album ${index + 1}',
-            'images': [],
-          },
+      final response = await http.get(
+        Uri.parse('https://api.spotify.com/v1/me/player/recently-played?limit=$limit'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+          'Content-Type': 'application/json',
         },
-        'played_at': DateTime.now().subtract(Duration(hours: index)).toIso8601String(),
-      });
+      );
+
+      print('📡 Recently played API response: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List<dynamic> tracks = data['items'] ?? [];
+        
+        print('✅ Retrieved ${tracks.length} recently played tracks');
+        
+        return tracks.cast<Map<String, dynamic>>();
+      } else if (response.statusCode == 401) {
+        print('🔑 Token expired, attempting refresh...');
+        final refreshed = await refreshAccessToken();
+        if (refreshed) {
+          // Retry the request with new token
+          return await getRecentlyPlayed(limit: limit);
+        }
+        return [];
+      } else {
+        print('❌ Failed to fetch recently played tracks: ${response.statusCode}');
+        print('Response: ${response.body}');
+        return [];
+      }
     } catch (e) {
-      print('Error retrieving recent tracks: $e');
+      print('❌ Error retrieving recently played tracks: $e');
       return [];
     }
   }
 
-  // Get listening statistics
+  // Get listening statistics (computed from user data)
   Future<Map<String, dynamic>?> getListeningStats() async {
-    if (!isConnected) return null;
+    if (!isConnected) {
+      print('❌ Not connected to Spotify');
+      return null;
+    }
 
     try {
-      // Statistics simulation
-      await Future.delayed(const Duration(seconds: 1));
+      print('📊 Computing listening statistics from user data...');
       
-      return {
-        'total_listening_time': 125400, // in seconds
-        'total_tracks': 1250,
-        'total_artists': 150,
-        'favorite_genres': [
-          {'name': 'Pop', 'count': 450},
-          {'name': 'Rock', 'count': 300},
-          {'name': 'Hip-Hop', 'count': 250},
-          {'name': 'Electronic', 'count': 150},
-        ],
+      // Get user data to compute statistics
+      final topArtists = await getTopArtists(limit: 50);
+      final topTracks = await getTopTracks(limit: 50);
+      final followedArtists = await getFollowedArtists(limit: 50);
+      final savedAlbums = await getSavedAlbums(limit: 50);
+      final savedTracks = await getSavedTracks(limit: 50);
+      
+      // Compute favorite genres from top artists
+      final genreCount = <String, int>{};
+      for (final artist in topArtists) {
+        final genres = artist['genres'] as List<dynamic>? ?? [];
+        for (final genre in genres) {
+          genreCount[genre] = (genreCount[genre] ?? 0) + 1;
+        }
+      }
+      
+      // Sort genres by count and take top 5
+      final favoriteGenres = genreCount.entries
+          .toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+      
+      final topGenres = favoriteGenres.take(5).map((entry) => {
+        'name': entry.key,
+        'count': entry.value,
+      }).toList();
+      
+      // Compute total listening time estimate (based on tracks and average duration)
+      final estimatedTotalDuration = topTracks.fold<int>(0, (sum, track) {
+        return sum + ((track['duration_ms'] as int?) ?? 180000); // Default 3 minutes
+      });
+      
+      final stats = {
+        'total_listening_time': estimatedTotalDuration ~/ 1000, // Convert to seconds
+        'total_tracks': topTracks.length + savedTracks.length,
+        'total_artists': topArtists.length + followedArtists.length,
+        'total_albums': savedAlbums.length,
+        'favorite_genres': topGenres,
         'monthly_stats': List.generate(12, (index) => {
           'month': index + 1,
-          'hours': 40 + (index * 2),
+          'hours': (estimatedTotalDuration / 1000 / 3600 / 12).round() + (index * 2),
         }),
       };
+      
+      print('✅ Listening statistics computed:');
+      print('   - Total tracks: ${stats['total_tracks']}');
+      print('   - Total artists: ${stats['total_artists']}');
+      print('   - Total albums: ${stats['total_albums']}');
+      print('   - Top genres: ${topGenres.length}');
+      
+      return stats;
     } catch (e) {
-      print('Error retrieving statistics: $e');
+      print('❌ Error computing listening statistics: $e');
       return null;
     }
   }
