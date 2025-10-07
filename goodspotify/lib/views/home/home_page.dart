@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/home_controller.dart';
 import '../../controllers/auth_controller.dart';
+import '../details/details_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -69,56 +70,6 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(height: 24),
-
-                // Statistics Cards
-                if (authController.isAuthenticated.value)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          'Top Artists',
-                          '${authController.topArtists.length}',
-                          Icons.person,
-                          Colors.blue,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildStatCard(
-                          'Top Tracks',
-                          '${authController.topTracks.length}',
-                          Icons.music_note,
-                          Colors.purple,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                const SizedBox(height: 16),
-
-                if (authController.isAuthenticated.value)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          'Saved Albums',
-                          '${authController.savedAlbums.length}',
-                          Icons.album,
-                          Colors.orange,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildStatCard(
-                          'Followed Artists',
-                          '${authController.followedArtists.length}',
-                          Icons.favorite,
-                          Colors.red,
-                        ),
-                      ),
-                    ],
-                  ),
 
                 const SizedBox(height: 24),
 
@@ -199,8 +150,12 @@ class HomePage extends StatelessWidget {
                                 ),
                                 trailing: const Icon(Icons.play_circle_outline),
                                 onTap: () {
-                                  // Play action
-                                  print('Playing track: ${trackData['name']}');
+                                  // Navigate to track details
+                                  Get.to(() => DetailsPage(
+                                    itemId: trackData['id'] ?? '',
+                                    itemType: 'track',
+                                    itemData: trackData,
+                                  ));
                                 },
                               ),
                             );
@@ -242,62 +197,72 @@ class HomePage extends StatelessWidget {
                               final album = track['album'] as Map<String, dynamic>? ?? {};
                               final albumImages = album['images'] as List<dynamic>? ?? [];
                               
-                              return Container(
-                                width: 150,
-                                margin: const EdgeInsets.only(right: 16),
-                                child: Card(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(12),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Expanded(
-                                          child: Container(
-                                            width: double.infinity,
-                                            decoration: BoxDecoration(
-                                              borderRadius: BorderRadius.circular(8),
-                                              image: albumImages.isNotEmpty
-                                                  ? DecorationImage(
-                                                      image: NetworkImage(albumImages[0]['url']),
-                                                      fit: BoxFit.cover,
+                              return GestureDetector(
+                                onTap: () {
+                                  // Navigate to track details
+                                  Get.to(() => DetailsPage(
+                                    itemId: track['id'] ?? '',
+                                    itemType: 'track',
+                                    itemData: track,
+                                  ));
+                                },
+                                child: Container(
+                                  width: 150,
+                                  margin: const EdgeInsets.only(right: 16),
+                                  child: Card(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Expanded(
+                                            child: Container(
+                                              width: double.infinity,
+                                              decoration: BoxDecoration(
+                                                borderRadius: BorderRadius.circular(8),
+                                                image: albumImages.isNotEmpty
+                                                    ? DecorationImage(
+                                                        image: NetworkImage(albumImages[0]['url']),
+                                                        fit: BoxFit.cover,
+                                                      )
+                                                    : null,
+                                              ),
+                                              child: albumImages.isEmpty
+                                                  ? Container(
+                                                      decoration: BoxDecoration(
+                                                        color: const Color(0xFF1DB954).withOpacity(0.1),
+                                                        borderRadius: BorderRadius.circular(8),
+                                                      ),
+                                                      child: const Icon(
+                                                        Icons.music_note,
+                                                        size: 40,
+                                                        color: Color(0xFF1DB954),
+                                                      ),
                                                     )
                                                   : null,
                                             ),
-                                            child: albumImages.isEmpty
-                                                ? Container(
-                                                    decoration: BoxDecoration(
-                                                      color: const Color(0xFF1DB954).withOpacity(0.1),
-                                                      borderRadius: BorderRadius.circular(8),
-                                                    ),
-                                                    child: const Icon(
-                                                      Icons.music_note,
-                                                      size: 40,
-                                                      color: Color(0xFF1DB954),
-                                                    ),
-                                                  )
-                                                : null,
                                           ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          track['name'] ?? 'Unknown Track',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12,
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            track['name'] ?? 'Unknown Track',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        Text(
-                                          artists.map((a) => a['name']).join(', '),
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: Colors.grey[600],
+                                          Text(
+                                            artists.map((a) => a['name']).join(', '),
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.grey[600],
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -313,40 +278,4 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            color: color,
-            size: 32,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              color: color.withOpacity(0.8),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
 }

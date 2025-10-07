@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/top_controller.dart';
+import '../details/details_page.dart';
 
 class TopPage extends StatelessWidget {
   const TopPage({super.key});
@@ -271,8 +272,12 @@ class TopPage extends StatelessWidget {
               ],
             ),
             onTap: () {
-              // Play action
-              print('Playing track: ${track['name']}');
+              // Navigate to track details
+              Get.to(() => DetailsPage(
+                itemId: track['id'] ?? '',
+                itemType: 'track',
+                itemData: track,
+              ));
             },
           ),
         );
@@ -394,8 +399,12 @@ class TopPage extends StatelessWidget {
               ],
             ),
             onTap: () {
-              // Navigate to artist page
-              print('Viewing artist: ${artist['name']}');
+              // Navigate to artist details
+              Get.to(() => DetailsPage(
+                itemId: artist['id'] ?? '',
+                itemType: 'artist',
+                itemData: artist,
+              ));
             },
           ),
         );
@@ -524,8 +533,12 @@ class TopPage extends StatelessWidget {
               ],
             ),
             onTap: () {
-              // Navigate to album page
-              print('Viewing album: ${album['name']}');
+              // Navigate to album details
+              Get.to(() => DetailsPage(
+                itemId: album['id'] ?? '',
+                itemType: 'album',
+                itemData: album,
+              ));
             },
           ),
         );

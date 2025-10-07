@@ -849,5 +849,47 @@ class SpotifyService extends GetxService {
     return {};
   }
 
+  // Generic API call method
+  Future<Map<String, dynamic>?> makeApiCall(String url) async {
+    if (!isConnected) {
+      print('❌ Not connected to Spotify');
+      return null;
+    }
+
+    try {
+      print('🌐 Making API call to: $url');
+      
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      print('📡 API response: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return data;
+      } else if (response.statusCode == 401) {
+        print('🔑 Token expired, attempting refresh...');
+        final refreshed = await refreshAccessToken();
+        if (refreshed) {
+          // Retry the request with new token
+          return await makeApiCall(url);
+        }
+        return null;
+      } else {
+        print('❌ API call failed: ${response.statusCode}');
+        print('Response: ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Error making API call: $e');
+      return null;
+    }
+  }
+
 
 }
