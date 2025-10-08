@@ -50,6 +50,7 @@ dependencies:
   # Utilities
   shared_preferences: ^2.2.2
   url_launcher: ^6.2.2
+  app_links: ^6.3.2
   
   # Authentication
   oauth2: ^2.0.3

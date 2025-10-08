@@ -25,6 +25,7 @@ class SpotifyService extends GetxService {
   static final Uri tokenEndpoint = Uri.parse('https://accounts.spotify.com/api/token');
   
   oauth2.Client? _client;
+  oauth2.AuthorizationCodeGrant? _grant;
   
   // Getter to check if user is connected
   bool get isConnected => _client != null && !_client!.credentials.isExpired;
@@ -80,15 +81,16 @@ class SpotifyService extends GetxService {
     try {
       print('🎵 Starting Spotify authentication with oauth2...');
 
-      // Create authorization URL
-      final grant = oauth2.AuthorizationCodeGrant(
+      // Create authorization code grant
+      _grant = oauth2.AuthorizationCodeGrant(
         clientId,
         authorizationEndpoint,
         tokenEndpoint,
         secret: clientSecret,
       );
 
-      final authorizationUrl = grant.getAuthorizationUrl(
+      // Get authorization URL
+      final authorizationUrl = _grant!.getAuthorizationUrl(
         Uri.parse(redirectUrl),
         scopes: scopes,
       );
@@ -96,23 +98,22 @@ class SpotifyService extends GetxService {
       print('🔗 Authorization URL: $authorizationUrl');
 
       // Launch the authorization URL in browser
-      if (!await launchUrl(
+      final launched = await launchUrl(
         authorizationUrl,
         mode: LaunchMode.externalApplication,
-      )) {
+      );
+
+      if (!launched) {
         print('❌ Could not launch authorization URL');
         return false;
       }
 
-      // Note: In a real app, you would need to implement a custom URL scheme handler
-      // to capture the callback. For now, we'll use a simplified approach.
+      print('✅ Browser opened, waiting for callback...');
+      print('📱 Callback URL: $redirectUrl');
       
-      // This is a placeholder - you'll need to implement proper callback handling
-      // based on your platform (iOS/Android)
-      print('⚠️ Please implement callback URL handling for your platform');
-      print('📱 After authorization, the app should receive the callback at: $redirectUrl');
-      
-      return false; // Return false for now until callback is implemented
+      // Return true to indicate browser was opened successfully
+      // The actual token exchange will happen in handleAuthorizationCallback
+      return true;
       
     } catch (e) {
       print('❌ Spotify authentication error: $e');
@@ -120,34 +121,50 @@ class SpotifyService extends GetxService {
     }
   }
 
-  // Handle authorization callback (to be called from your deep link handler)
+  // Handle authorization callback (to be called from deep link handler)
   Future<bool> handleAuthorizationCallback(Uri callbackUri) async {
     try {
       print('🔄 Handling authorization callback...');
+      print('📱 Callback URI: $callbackUri');
+      print('📋 Query parameters: ${callbackUri.queryParameters}');
       
+      if (_grant == null) {
+        print('❌ No grant available - authentication not started');
+        return false;
+      }
+
+      // Extract authorization code from callback
       final code = callbackUri.queryParameters['code'];
+      final error = callbackUri.queryParameters['error'];
+      
+      if (error != null) {
+        print('❌ Authorization error: $error');
+        return false;
+      }
+      
       if (code == null) {
         print('❌ No authorization code in callback');
         return false;
       }
 
-      // Exchange code for token
-      final grant = oauth2.AuthorizationCodeGrant(
-        clientId,
-        authorizationEndpoint,
-        tokenEndpoint,
-        secret: clientSecret,
-      );
+      print('✅ Authorization code received: ${code.substring(0, 20)}...');
 
-      _client = await grant.handleAuthorizationResponse(callbackUri.queryParameters);
+      // Exchange authorization code for access token
+      _client = await _grant!.handleAuthorizationResponse(callbackUri.queryParameters);
+      
+      // Clear the grant as it's no longer needed
+      _grant = null;
       
       await _saveCredentialsToStorage();
       
       print('✅ Authentication completed successfully!');
+      print('🔑 Access token: ${_client!.credentials.accessToken.substring(0, 20)}...');
+      
       return true;
       
     } catch (e) {
       print('❌ Error handling authorization callback: $e');
+      _grant = null;
       return false;
     }
   }
@@ -175,6 +192,7 @@ class SpotifyService extends GetxService {
   // Disconnect
   Future<void> disconnect() async {
     _client = null;
+    _grant = null;
     
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('spotify_credentials');
