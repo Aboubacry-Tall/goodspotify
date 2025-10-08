@@ -1,314 +1,185 @@
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+import 'package:oauth2/oauth2.dart' as oauth2;
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 
-// Authorization response model
-class AuthorizationResponse {
-  final String? code;
-  final String? error;
-  
-  AuthorizationResponse({this.code, this.error});
-}
-
-// Access token response model
-class AccessTokenResponse {
-  final String? accessToken;
-  final String? refreshToken;
-  final String? tokenType;
-  final int? expiresIn;
-  
-  AccessTokenResponse({
-    this.accessToken,
-    this.refreshToken,
-    this.tokenType,
-    this.expiresIn,
-  });
-}
-
-// Custom OAuth2 Client for Spotify based on your example
-class SpotifyOAuth2Client {
-  final String customUriScheme;
-  final String redirectUri;
-  final String authorizeUrl = 'https://accounts.spotify.com/authorize';
-  final String tokenUrl = 'https://accounts.spotify.com/api/token';
-
-  SpotifyOAuth2Client({
-    required this.customUriScheme,
-    required this.redirectUri,
-  });
-
-  // Request authorization
-  Future<AuthorizationResponse> requestAuthorization({
-    required String clientId,
-    Map<String, String>? customParams,
-    List<String>? scopes,
-  }) async {
-    try {
-      // Build authorization URL
-      final params = {
-        'client_id': clientId,
-        'response_type': 'code',
-        'redirect_uri': redirectUri,
-        if (scopes != null) 'scope': scopes.join(' '),
-        ...?customParams,
-      };
-      
-      final query = params.entries
-          .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
-          .join('&');
-      
-      final authorizationUrl = '$authorizeUrl?$query';
-      print('🔗 Authorization URL: $authorizationUrl');
-
-      // Use flutter_web_auth_2 to open browser and get callback
-      final result = await FlutterWebAuth2.authenticate(
-        url: authorizationUrl,
-        callbackUrlScheme: customUriScheme,
-      );
-
-      print('🔄 Authentication result received: $result');
-
-      // Parse the authorization code from callback
-      final uri = Uri.parse(result);
-      final code = uri.queryParameters['code'];
-      final error = uri.queryParameters['error'];
-
-      return AuthorizationResponse(code: code, error: error);
-    } catch (e) {
-      print('❌ Authorization error: $e');
-      return AuthorizationResponse(error: e.toString());
-    }
-  }
-
-  // Request access token
-  Future<AccessTokenResponse> requestAccessToken({
-    required String code,
-    required String clientId,
-    required String clientSecret,
-  }) async {
-    try {
-      print('🔄 Exchanging code for access token...');
-
-      final response = await http.post(
-        Uri.parse(tokenUrl),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: {
-          'grant_type': 'authorization_code',
-          'code': code,
-          'redirect_uri': redirectUri,
-          'client_id': clientId,
-          'client_secret': clientSecret,
-        },
-      );
-
-      print('📡 Token exchange response: ${response.statusCode}');
-      print('📄 Response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return AccessTokenResponse(
-          accessToken: data['access_token'],
-          refreshToken: data['refresh_token'],
-          tokenType: data['token_type'],
-          expiresIn: data['expires_in'],
-        );
-      } else {
-        print('❌ Token exchange failed: ${response.statusCode}');
-        return AccessTokenResponse();
-      }
-    } catch (e) {
-      print('❌ Error exchanging code for token: $e');
-      return AccessTokenResponse();
-    }
-  }
-
-  // Refresh token
-  Future<AccessTokenResponse> refreshToken({
-    required String refreshToken,
-    required String clientId,
-    required String clientSecret,
-  }) async {
-    try {
-      print('🔄 Refreshing access token...');
-      
-      final response = await http.post(
-        Uri.parse(tokenUrl),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: {
-          'grant_type': 'refresh_token',
-          'refresh_token': refreshToken,
-          'client_id': clientId,
-          'client_secret': clientSecret,
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return AccessTokenResponse(
-          accessToken: data['access_token'],
-          refreshToken: data['refresh_token'] ?? refreshToken,
-          tokenType: data['token_type'],
-          expiresIn: data['expires_in'],
-        );
-      } else {
-        print('❌ Token refresh failed: ${response.statusCode}');
-        return AccessTokenResponse();
-      }
-    } catch (e) {
-      print('❌ Error refreshing token: $e');
-      return AccessTokenResponse();
-    }
-  }
-}
-
 class SpotifyService extends GetxService {
-  // Spotify Web API configuration (without SDK)
+  // Spotify Web API configuration
   static const String clientId = '8009dbccda7740a5a176d809ef5a5287';
   static const String clientSecret = '74a4898e9e1240d1b000c27fc92c25dd';
-  static const String redirectUri = 'com.goodspotify.stream://callback';
-  static const String scope = 'user-read-private user-read-email user-top-read user-read-recently-played playlist-read-private';
+  static const String redirectUrl = 'com.goodspotify.stream://callback';
+  static const List<String> scopes = [
+    'user-read-private',
+    'user-read-email',
+    'user-top-read',
+    'user-read-recently-played',
+    'playlist-read-private',
+    'user-library-read',
+    'user-follow-read',
+  ];
   
-  String? _accessToken;
-  String? _refreshToken;
+  // OAuth2 endpoints
+  static final Uri authorizationEndpoint = Uri.parse('https://accounts.spotify.com/authorize');
+  static final Uri tokenEndpoint = Uri.parse('https://accounts.spotify.com/api/token');
   
-  // OAuth2 Client for Spotify
-  late SpotifyOAuth2Client _oauth2Client;
+  oauth2.Client? _client;
   
   // Getter to check if user is connected
-  bool get isConnected => _accessToken != null;
+  bool get isConnected => _client != null && !_client!.credentials.isExpired;
   
   @override
   Future<void> onInit() async {
     super.onInit();
-    
-    // Initialize OAuth2 Client for Spotify
-    _oauth2Client = SpotifyOAuth2Client(
-      customUriScheme: 'com.goodspotify.stream',
-      redirectUri: redirectUri,
-    );
-    
-    await _loadTokensFromStorage();
+    await _loadCredentialsFromStorage();
   }
 
-  // Load tokens from local storage
-  Future<void> _loadTokensFromStorage() async {
-    final prefs = await SharedPreferences.getInstance();
-    _accessToken = prefs.getString('spotify_access_token');
-    _refreshToken = prefs.getString('spotify_refresh_token');
-  }
-
-  // Save tokens to local storage
-  Future<void> _saveTokensToStorage() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (_accessToken != null) {
-      await prefs.setString('spotify_access_token', _accessToken!);
+  // Load credentials from local storage
+  Future<void> _loadCredentialsFromStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final credentialsJson = prefs.getString('spotify_credentials');
+      
+      if (credentialsJson != null) {
+        final credentials = oauth2.Credentials.fromJson(credentialsJson);
+        _client = oauth2.Client(
+          credentials,
+          identifier: clientId,
+          secret: clientSecret,
+        );
+        
+        print('✅ Loaded credentials from storage');
+        
+        // Check if token is expired and refresh if needed
+        if (_client!.credentials.isExpired) {
+          print('🔄 Token expired, refreshing...');
+          await refreshAccessToken();
+        }
+      }
+    } catch (e) {
+      print('❌ Error loading credentials: $e');
     }
-    if (_refreshToken != null) {
-      await prefs.setString('spotify_refresh_token', _refreshToken!);
+  }
+
+  // Save credentials to local storage
+  Future<void> _saveCredentialsToStorage() async {
+    try {
+      if (_client != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('spotify_credentials', _client!.credentials.toJson());
+        print('💾 Credentials saved to storage');
+      }
+    } catch (e) {
+      print('❌ Error saving credentials: $e');
     }
   }
 
-  // Spotify Web API authentication using oauth2_client
+  // Spotify authentication using oauth2 package
   Future<bool> authenticate() async {
     try {
-      print('🎵 Starting Spotify authentication with oauth2_client...');
+      print('🎵 Starting Spotify authentication with oauth2...');
 
-      // Step 1: Request authorization
-      var authResp = await _oauth2Client.requestAuthorization(
-        clientId: clientId,
-        customParams: {'show_dialog': 'true'},
-        scopes: scope.split(' '),
+      // Create authorization URL
+      final grant = oauth2.AuthorizationCodeGrant(
+        clientId,
+        authorizationEndpoint,
+        tokenEndpoint,
+        secret: clientSecret,
       );
 
-      print('🔄 Authorization response received');
-      print('📋 Auth code: ${authResp.code != null ? '${authResp.code!.substring(0, 10)}...' : 'null'}');
+      final authorizationUrl = grant.getAuthorizationUrl(
+        Uri.parse(redirectUrl),
+        scopes: scopes,
+      );
 
-      if (authResp.code == null) {
-        print('❌ No authorization code received');
+      print('🔗 Authorization URL: $authorizationUrl');
+
+      // Launch the authorization URL in browser
+      if (!await launchUrl(
+        authorizationUrl,
+        mode: LaunchMode.externalApplication,
+      )) {
+        print('❌ Could not launch authorization URL');
         return false;
       }
 
-      // Step 2: Exchange authorization code for access token
-      var accessToken = await _oauth2Client.requestAccessToken(
-        code: authResp.code.toString(),
-        clientId: clientId,
-        clientSecret: clientSecret,
-      );
-
-      if (accessToken.accessToken != null) {
-        _accessToken = accessToken.accessToken;
-        _refreshToken = accessToken.refreshToken;
-        
-        await _saveTokensToStorage();
-        
-        print('🎉 Authentication completed successfully!');
-        print('🔑 Access token: ${_accessToken?.substring(0, 20)}...');
-        print('🔄 Refresh token: ${_refreshToken?.substring(0, 20)}...');
-        return true;
-      } else {
-        print('❌ Token exchange failed');
-        return false;
-      }
-
+      // Note: In a real app, you would need to implement a custom URL scheme handler
+      // to capture the callback. For now, we'll use a simplified approach.
+      
+      // This is a placeholder - you'll need to implement proper callback handling
+      // based on your platform (iOS/Android)
+      print('⚠️ Please implement callback URL handling for your platform');
+      print('📱 After authorization, the app should receive the callback at: $redirectUrl');
+      
+      return false; // Return false for now until callback is implemented
+      
     } catch (e) {
       print('❌ Spotify authentication error: $e');
       return false;
     }
   }
 
-
-
-
-
-  // Refresh access token using oauth2_client
-  Future<bool> refreshAccessToken() async {
-    if (_refreshToken == null) return false;
-
+  // Handle authorization callback (to be called from your deep link handler)
+  Future<bool> handleAuthorizationCallback(Uri callbackUri) async {
     try {
-      print('🔄 Refreshing access token with oauth2_client...');
+      print('🔄 Handling authorization callback...');
       
-      var accessToken = await _oauth2Client.refreshToken(
-        refreshToken: _refreshToken!,
-        clientId: clientId,
-        clientSecret: clientSecret,
-      );
-
-      if (accessToken.accessToken != null) {
-        _accessToken = accessToken.accessToken;
-        
-        // Update refresh token if a new one is provided
-        if (accessToken.refreshToken != null) {
-          _refreshToken = accessToken.refreshToken;
-        }
-        
-        await _saveTokensToStorage();
-        
-        print('✅ Access token refreshed successfully with oauth2_client');
-        return true;
-      } else {
-        print('❌ Token refresh failed with oauth2_client');
+      final code = callbackUri.queryParameters['code'];
+      if (code == null) {
+        print('❌ No authorization code in callback');
         return false;
       }
+
+      // Exchange code for token
+      final grant = oauth2.AuthorizationCodeGrant(
+        clientId,
+        authorizationEndpoint,
+        tokenEndpoint,
+        secret: clientSecret,
+      );
+
+      _client = await grant.handleAuthorizationResponse(callbackUri.queryParameters);
+      
+      await _saveCredentialsToStorage();
+      
+      print('✅ Authentication completed successfully!');
+      return true;
+      
     } catch (e) {
-      print('❌ Error refreshing token with oauth2_client: $e');
+      print('❌ Error handling authorization callback: $e');
+      return false;
+    }
+  }
+
+  // Refresh access token
+  Future<bool> refreshAccessToken() async {
+    if (_client == null) return false;
+
+    try {
+      print('🔄 Refreshing access token...');
+      
+      final newClient = await _client!.refreshCredentials();
+      _client = newClient;
+      
+      await _saveCredentialsToStorage();
+      
+      print('✅ Access token refreshed successfully');
+      return true;
+    } catch (e) {
+      print('❌ Error refreshing token: $e');
       return false;
     }
   }
 
   // Disconnect
   Future<void> disconnect() async {
-    _accessToken = null;
-    _refreshToken = null;
+    _client = null;
     
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('spotify_access_token');
-    await prefs.remove('spotify_refresh_token');
+    await prefs.remove('spotify_credentials');
+    
+    print('👋 Disconnected from Spotify');
   }
 
   // Get user profile
@@ -321,12 +192,8 @@ class SpotifyService extends GetxService {
     try {
       print('👤 Fetching user profile from Spotify API...');
       
-      final response = await http.get(
+      final response = await _client!.get(
         Uri.parse('https://api.spotify.com/v1/me'),
-        headers: {
-          'Authorization': 'Bearer $_accessToken',
-          'Content-Type': 'application/json',
-        },
       );
 
       print('📡 User profile API response: ${response.statusCode}');
@@ -335,14 +202,6 @@ class SpotifyService extends GetxService {
         final data = json.decode(response.body);
         print('✅ Retrieved user profile: ${data['display_name']}');
         return data;
-      } else if (response.statusCode == 401) {
-        print('🔑 Token expired, attempting refresh...');
-        final refreshed = await refreshAccessToken();
-        if (refreshed) {
-          // Retry the request with new token
-          return await getUserProfile();
-        }
-        return null;
       } else {
         print('❌ Failed to fetch user profile: ${response.statusCode}');
         print('Response: ${response.body}');
@@ -350,6 +209,14 @@ class SpotifyService extends GetxService {
       }
     } catch (e) {
       print('❌ Error retrieving user profile: $e');
+      
+      // Try to refresh token if expired
+      if (e.toString().contains('401') || e.toString().contains('expired')) {
+        final refreshed = await refreshAccessToken();
+        if (refreshed) {
+          return await getUserProfile();
+        }
+      }
       return null;
     }
   }
@@ -367,12 +234,8 @@ class SpotifyService extends GetxService {
     try {
       print('🎵 Fetching top tracks from Spotify API...');
       
-      final response = await http.get(
+      final response = await _client!.get(
         Uri.parse('https://api.spotify.com/v1/me/top/tracks?time_range=$timeRange&limit=$limit'),
-        headers: {
-          'Authorization': 'Bearer $_accessToken',
-          'Content-Type': 'application/json',
-        },
       );
 
       print('📡 Top tracks API response: ${response.statusCode}');
@@ -384,21 +247,19 @@ class SpotifyService extends GetxService {
         print('✅ Retrieved ${tracks.length} top tracks');
         
         return tracks.cast<Map<String, dynamic>>();
-      } else if (response.statusCode == 401) {
-        print('🔑 Token expired, attempting refresh...');
-        final refreshed = await refreshAccessToken();
-        if (refreshed) {
-          // Retry the request with new token
-          return await getTopTracks(timeRange: timeRange, limit: limit);
-        }
-        return [];
       } else {
         print('❌ Failed to fetch top tracks: ${response.statusCode}');
-        print('Response: ${response.body}');
         return [];
       }
     } catch (e) {
       print('❌ Error retrieving top tracks: $e');
+      
+      if (e.toString().contains('401') || e.toString().contains('expired')) {
+        final refreshed = await refreshAccessToken();
+        if (refreshed) {
+          return await getTopTracks(timeRange: timeRange, limit: limit);
+        }
+      }
       return [];
     }
   }
@@ -416,12 +277,8 @@ class SpotifyService extends GetxService {
     try {
       print('🎵 Fetching top artists from Spotify API...');
       
-      final response = await http.get(
+      final response = await _client!.get(
         Uri.parse('https://api.spotify.com/v1/me/top/artists?time_range=$timeRange&limit=$limit'),
-        headers: {
-          'Authorization': 'Bearer $_accessToken',
-          'Content-Type': 'application/json',
-        },
       );
 
       print('📡 Top artists API response: ${response.statusCode}');
@@ -433,21 +290,19 @@ class SpotifyService extends GetxService {
         print('✅ Retrieved ${artists.length} top artists');
         
         return artists.cast<Map<String, dynamic>>();
-      } else if (response.statusCode == 401) {
-        print('🔑 Token expired, attempting refresh...');
-        final refreshed = await refreshAccessToken();
-        if (refreshed) {
-          // Retry the request with new token
-          return await getTopArtists(timeRange: timeRange, limit: limit);
-        }
-        return [];
       } else {
         print('❌ Failed to fetch top artists: ${response.statusCode}');
-        print('Response: ${response.body}');
         return [];
       }
     } catch (e) {
       print('❌ Error retrieving top artists: $e');
+      
+      if (e.toString().contains('401') || e.toString().contains('expired')) {
+        final refreshed = await refreshAccessToken();
+        if (refreshed) {
+          return await getTopArtists(timeRange: timeRange, limit: limit);
+        }
+      }
       return [];
     }
   }
@@ -462,12 +317,8 @@ class SpotifyService extends GetxService {
     try {
       print('⏰ Fetching recently played tracks from Spotify API...');
       
-      final response = await http.get(
+      final response = await _client!.get(
         Uri.parse('https://api.spotify.com/v1/me/player/recently-played?limit=$limit'),
-        headers: {
-          'Authorization': 'Bearer $_accessToken',
-          'Content-Type': 'application/json',
-        },
       );
 
       print('📡 Recently played API response: ${response.statusCode}');
@@ -479,88 +330,20 @@ class SpotifyService extends GetxService {
         print('✅ Retrieved ${tracks.length} recently played tracks');
         
         return tracks.cast<Map<String, dynamic>>();
-      } else if (response.statusCode == 401) {
-        print('🔑 Token expired, attempting refresh...');
-        final refreshed = await refreshAccessToken();
-        if (refreshed) {
-          // Retry the request with new token
-          return await getRecentlyPlayed(limit: limit);
-        }
-        return [];
       } else {
         print('❌ Failed to fetch recently played tracks: ${response.statusCode}');
-        print('Response: ${response.body}');
         return [];
       }
     } catch (e) {
       print('❌ Error retrieving recently played tracks: $e');
-      return [];
-    }
-  }
-
-  // Get listening statistics (computed from user data)
-  Future<Map<String, dynamic>?> getListeningStats() async {
-    if (!isConnected) {
-      print('❌ Not connected to Spotify');
-      return null;
-    }
-
-    try {
-      print('📊 Computing listening statistics from user data...');
       
-      // Get user data to compute statistics
-      final topArtists = await getTopArtists(limit: 50);
-      final topTracks = await getTopTracks(limit: 50);
-      final followedArtists = await getFollowedArtists(limit: 50);
-      final savedAlbums = await getSavedAlbums(limit: 50);
-      final savedTracks = await getSavedTracks(limit: 50);
-      
-      // Compute favorite genres from top artists
-      final genreCount = <String, int>{};
-      for (final artist in topArtists) {
-        final genres = artist['genres'] as List<dynamic>? ?? [];
-        for (final genre in genres) {
-          genreCount[genre] = (genreCount[genre] ?? 0) + 1;
+      if (e.toString().contains('401') || e.toString().contains('expired')) {
+        final refreshed = await refreshAccessToken();
+        if (refreshed) {
+          return await getRecentlyPlayed(limit: limit);
         }
       }
-      
-      // Sort genres by count and take top 5
-      final favoriteGenres = genreCount.entries
-          .toList()
-          ..sort((a, b) => b.value.compareTo(a.value));
-      
-      final topGenres = favoriteGenres.take(5).map((entry) => {
-        'name': entry.key,
-        'count': entry.value,
-      }).toList();
-      
-      // Compute total listening time estimate (based on tracks and average duration)
-      final estimatedTotalDuration = topTracks.fold<int>(0, (sum, track) {
-        return sum + ((track['duration_ms'] as int?) ?? 180000); // Default 3 minutes
-      });
-      
-      final stats = {
-        'total_listening_time': estimatedTotalDuration ~/ 1000, // Convert to seconds
-        'total_tracks': topTracks.length + savedTracks.length,
-        'total_artists': topArtists.length + followedArtists.length,
-        'total_albums': savedAlbums.length,
-        'favorite_genres': topGenres,
-        'monthly_stats': List.generate(12, (index) => {
-          'month': index + 1,
-          'hours': (estimatedTotalDuration / 1000 / 3600 / 12).round() + (index * 2),
-        }),
-      };
-      
-      print('✅ Listening statistics computed:');
-      print('   - Total tracks: ${stats['total_tracks']}');
-      print('   - Total artists: ${stats['total_artists']}');
-      print('   - Total albums: ${stats['total_albums']}');
-      print('   - Top genres: ${topGenres.length}');
-      
-      return stats;
-    } catch (e) {
-      print('❌ Error computing listening statistics: $e');
-      return null;
+      return [];
     }
   }
 
@@ -576,12 +359,8 @@ class SpotifyService extends GetxService {
     try {
       print('👥 Fetching followed artists from Spotify API...');
       
-      final response = await http.get(
+      final response = await _client!.get(
         Uri.parse('https://api.spotify.com/v1/me/following?type=artist&limit=$limit'),
-        headers: {
-          'Authorization': 'Bearer $_accessToken',
-          'Content-Type': 'application/json',
-        },
       );
 
       print('📡 Followed artists API response: ${response.statusCode}');
@@ -593,21 +372,19 @@ class SpotifyService extends GetxService {
         print('✅ Retrieved ${artists.length} followed artists');
         
         return artists.cast<Map<String, dynamic>>();
-      } else if (response.statusCode == 401) {
-        print('🔑 Token expired, attempting refresh...');
-        final refreshed = await refreshAccessToken();
-        if (refreshed) {
-          // Retry the request with new token
-          return await getFollowedArtists(limit: limit);
-        }
-        return [];
       } else {
         print('❌ Failed to fetch followed artists: ${response.statusCode}');
-        print('Response: ${response.body}');
         return [];
       }
     } catch (e) {
       print('❌ Error retrieving followed artists: $e');
+      
+      if (e.toString().contains('401') || e.toString().contains('expired')) {
+        final refreshed = await refreshAccessToken();
+        if (refreshed) {
+          return await getFollowedArtists(limit: limit);
+        }
+      }
       return [];
     }
   }
@@ -624,12 +401,8 @@ class SpotifyService extends GetxService {
     try {
       print('💿 Fetching saved albums from Spotify API...');
       
-      final response = await http.get(
+      final response = await _client!.get(
         Uri.parse('https://api.spotify.com/v1/me/albums?limit=$limit'),
-        headers: {
-          'Authorization': 'Bearer $_accessToken',
-          'Content-Type': 'application/json',
-        },
       );
 
       print('📡 Saved albums API response: ${response.statusCode}');
@@ -638,27 +411,24 @@ class SpotifyService extends GetxService {
         final data = json.decode(response.body);
         final List<dynamic> albums = data['items'] ?? [];
         
-        // Extract album data from the nested structure
         final albumList = albums.map((item) => item['album'] as Map<String, dynamic>).toList();
         
         print('✅ Retrieved ${albumList.length} saved albums');
         
         return albumList.cast<Map<String, dynamic>>();
-      } else if (response.statusCode == 401) {
-        print('🔑 Token expired, attempting refresh...');
-        final refreshed = await refreshAccessToken();
-        if (refreshed) {
-          // Retry the request with new token
-          return await getSavedAlbums(limit: limit);
-        }
-        return [];
       } else {
         print('❌ Failed to fetch saved albums: ${response.statusCode}');
-        print('Response: ${response.body}');
         return [];
       }
     } catch (e) {
       print('❌ Error retrieving saved albums: $e');
+      
+      if (e.toString().contains('401') || e.toString().contains('expired')) {
+        final refreshed = await refreshAccessToken();
+        if (refreshed) {
+          return await getSavedAlbums(limit: limit);
+        }
+      }
       return [];
     }
   }
@@ -675,12 +445,8 @@ class SpotifyService extends GetxService {
     try {
       print('🎵 Fetching saved tracks from Spotify API...');
       
-      final response = await http.get(
+      final response = await _client!.get(
         Uri.parse('https://api.spotify.com/v1/me/tracks?limit=$limit'),
-        headers: {
-          'Authorization': 'Bearer $_accessToken',
-          'Content-Type': 'application/json',
-        },
       );
 
       print('📡 Saved tracks API response: ${response.statusCode}');
@@ -689,28 +455,83 @@ class SpotifyService extends GetxService {
         final data = json.decode(response.body);
         final List<dynamic> tracks = data['items'] ?? [];
         
-        // Extract track data from the nested structure
         final trackList = tracks.map((item) => item['track'] as Map<String, dynamic>).toList();
         
         print('✅ Retrieved ${trackList.length} saved tracks');
         
         return trackList.cast<Map<String, dynamic>>();
-      } else if (response.statusCode == 401) {
-        print('🔑 Token expired, attempting refresh...');
-        final refreshed = await refreshAccessToken();
-        if (refreshed) {
-          // Retry the request with new token
-          return await getSavedTracks(limit: limit);
-        }
-        return [];
       } else {
         print('❌ Failed to fetch saved tracks: ${response.statusCode}');
-        print('Response: ${response.body}');
         return [];
       }
     } catch (e) {
       print('❌ Error retrieving saved tracks: $e');
+      
+      if (e.toString().contains('401') || e.toString().contains('expired')) {
+        final refreshed = await refreshAccessToken();
+        if (refreshed) {
+          return await getSavedTracks(limit: limit);
+        }
+      }
       return [];
+    }
+  }
+
+  // Get listening statistics (computed from user data)
+  Future<Map<String, dynamic>?> getListeningStats() async {
+    if (!isConnected) {
+      print('❌ Not connected to Spotify');
+      return null;
+    }
+
+    try {
+      print('📊 Computing listening statistics from user data...');
+      
+      final topArtists = await getTopArtists(limit: 50);
+      final topTracks = await getTopTracks(limit: 50);
+      final followedArtists = await getFollowedArtists(limit: 50);
+      final savedAlbums = await getSavedAlbums(limit: 50);
+      final savedTracks = await getSavedTracks(limit: 50);
+      
+      final genreCount = <String, int>{};
+      for (final artist in topArtists) {
+        final genres = artist['genres'] as List<dynamic>? ?? [];
+        for (final genre in genres) {
+          genreCount[genre] = (genreCount[genre] ?? 0) + 1;
+        }
+      }
+      
+      final favoriteGenres = genreCount.entries
+          .toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+      
+      final topGenres = favoriteGenres.take(5).map((entry) => {
+        'name': entry.key,
+        'count': entry.value,
+      }).toList();
+      
+      final estimatedTotalDuration = topTracks.fold<int>(0, (sum, track) {
+        return sum + ((track['duration_ms'] as int?) ?? 180000);
+      });
+      
+      final stats = {
+        'total_listening_time': estimatedTotalDuration ~/ 1000,
+        'total_tracks': topTracks.length + savedTracks.length,
+        'total_artists': topArtists.length + followedArtists.length,
+        'total_albums': savedAlbums.length,
+        'favorite_genres': topGenres,
+        'monthly_stats': List.generate(12, (index) => {
+          'month': index + 1,
+          'hours': (estimatedTotalDuration / 1000 / 3600 / 12).round() + (index * 2),
+        }),
+      };
+      
+      print('✅ Listening statistics computed');
+      
+      return stats;
+    } catch (e) {
+      print('❌ Error computing listening statistics: $e');
+      return null;
     }
   }
 
@@ -727,7 +548,6 @@ class SpotifyService extends GetxService {
     try {
       print('🎵 Fetching all user artists...');
       
-      // Fetch both top artists and followed artists in parallel
       final results = await Future.wait([
         getTopArtists(timeRange: timeRange, limit: limit),
         getFollowedArtists(limit: limit),
@@ -761,7 +581,6 @@ class SpotifyService extends GetxService {
     try {
       print('🎵 Loading all user data from Spotify...');
       
-      // Load all data in parallel for better performance
       final results = await Future.wait([
         getUserProfile(),
         getTopArtists(timeRange: timeRange, limit: limit),
@@ -782,17 +601,8 @@ class SpotifyService extends GetxService {
       final recentlyPlayed = results[6] as List<Map<String, dynamic>>;
       final listeningStats = results[7];
 
-      print('✅ Successfully loaded all user data:');
-      print('   - User profile: ${userProfile != null ? "✅" : "❌"}');
-      print('   - Top artists: ${topArtists.length}');
-      print('   - Top tracks: ${topTracks.length}');
-      print('   - Followed artists: ${followedArtists.length}');
-      print('   - Saved albums: ${savedAlbums.length}');
-      print('   - Saved tracks: ${savedTracks.length}');
-      print('   - Recently played: ${recentlyPlayed.length}');
-      print('   - Listening stats: ${listeningStats != null ? "✅" : "❌"}');
+      print('✅ Successfully loaded all user data');
 
-      // Save data to local storage
       await _saveUserDataToStorage({
         'userProfile': userProfile,
         'topArtists': topArtists,
@@ -859,37 +669,27 @@ class SpotifyService extends GetxService {
     try {
       print('🌐 Making API call to: $url');
       
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $_accessToken',
-          'Content-Type': 'application/json',
-        },
-      );
+      final response = await _client!.get(Uri.parse(url));
 
       print('📡 API response: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
         return data;
-      } else if (response.statusCode == 401) {
-        print('🔑 Token expired, attempting refresh...');
-        final refreshed = await refreshAccessToken();
-        if (refreshed) {
-          // Retry the request with new token
-          return await makeApiCall(url);
-        }
-        return null;
       } else {
         print('❌ API call failed: ${response.statusCode}');
-        print('Response: ${response.body}');
         return null;
       }
     } catch (e) {
       print('❌ Error making API call: $e');
+      
+      if (e.toString().contains('401') || e.toString().contains('expired')) {
+        final refreshed = await refreshAccessToken();
+        if (refreshed) {
+          return await makeApiCall(url);
+        }
+      }
       return null;
     }
   }
-
-
 }
