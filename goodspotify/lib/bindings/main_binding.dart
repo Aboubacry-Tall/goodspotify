@@ -6,14 +6,12 @@ import '../controllers/stats_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../controllers/auth_controller.dart';
 import '../services/spotify_service.dart';
-import '../services/firebase_service.dart';
 
 class MainBinding extends Bindings {
   @override
   void dependencies() {
     // Inject services first
     Get.put<SpotifyService>(SpotifyService(), permanent: true);
-    Get.put<FirebaseService>(FirebaseService(), permanent: true);
     
     // Inject all main controllers
     // AuthController needs to be eagerly initialized since other controllers depend on it

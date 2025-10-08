@@ -38,11 +38,7 @@ dependencies:
   # GetX for state management and routing
   get: ^4.6.6
   
-  # Firebase packages
-  firebase_core: ^2.24.2
-  firebase_auth: ^4.15.3
-  cloud_firestore: ^4.13.6
-  firebase_analytics: ^10.7.4
+  # Firebase packages removed - using local storage only
   
   # HTTP requests
   http: ^1.1.0

@@ -9,8 +9,7 @@ import 'views/auth/auth_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Firebase sera initialisé plus tard quand nécessaire
-  // Pour l'instant, l'authentification Spotify fonctionne sans Firebase
+  // Application utilise uniquement Spotify API et stockage local
   
   runApp(const GoodSpotifyApp());
 }

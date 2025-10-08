@@ -23,7 +23,7 @@ class StatsController extends GetxController {
       // Data loading simulation
       await Future.delayed(const Duration(seconds: 2));
       
-      // Here you will integrate Spotify API and Firebase
+      // Here you will integrate Spotify API and local storage
       listeningTime.value = 12450; // minutes
       totalTracks.value = 1250;
       totalArtists.value = 150;
